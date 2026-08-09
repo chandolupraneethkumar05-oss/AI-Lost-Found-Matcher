@@ -25,37 +25,6 @@ REGISTERED_ITEMS_PATH = "data/registered_items"
 METADATA_PATH = "data/registered_items_metadata.json"
 
 
-def prepare_display_image(image_path, width=280, height=200):
-
-    image = Image.open(
-        image_path
-    ).convert("RGB")
-
-    # Fit image inside fixed dimensions
-    image.thumbnail(
-        (width, height),
-        Image.Resampling.LANCZOS
-    )
-
-    # Create fixed-size canvas
-    canvas = Image.new(
-        "RGB",
-        (width, height),
-        "white"
-    )
-
-    # Center image
-    x = (width - image.width) // 2
-    y = (height - image.height) // 2
-
-    canvas.paste(
-        image,
-        (x, y)
-    )
-
-    return canvas
-
-
 # ============================================================
 # PAGE CONFIGURATION
 # ============================================================
@@ -67,18 +36,112 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-def prepare_display_image(image_path, size=(450, 450)):
-    image = Image.open(image_path).convert("RGB")
 
-    # Crop and resize to exactly fit the box
-    image = ImageOps.fit(
-        image,
-        size,
-        method=Image.Resampling.LANCZOS,
-        centering=(0.5, 0.5)
+# ============================================================
+# CATEGORY SYSTEM
+# ============================================================
+
+DEFAULT_CATEGORIES = [
+    "backpack",
+    "bottle",
+    "phone",
+    "wallet",
+    "watch",
+    "laptop",
+    "other"
+]
+
+
+def get_categories():
+
+    categories = set(DEFAULT_CATEGORIES)
+
+    for item in database:
+
+        category = item.get("category")
+
+        if category:
+            categories.add(category.lower())
+
+    return sorted(categories)
+
+
+def category_selector(label, key_prefix):
+
+    categories = get_categories()
+
+    display_categories = [
+        category.title()
+        for category in categories
+        if category != "other"
+    ]
+
+    display_categories.append("Other / Custom")
+
+    selected = st.selectbox(
+        label,
+        display_categories,
+        key=f"{key_prefix}_category"
     )
 
-    return image
+    if selected == "Other / Custom":
+
+        custom_category = st.text_input(
+            "Enter your category",
+            placeholder="Example: Earbuds, ID Card, Calculator...",
+            key=f"{key_prefix}_custom"
+        )
+
+        if custom_category.strip():
+
+            return custom_category.strip().lower()
+
+        return "other"
+
+    return selected.lower()
+
+
+# ============================================================
+# IMAGE DISPLAY
+# ============================================================
+
+def prepare_display_image(
+    image_path,
+    size=(320, 260)
+):
+
+    image = Image.open(
+        image_path
+    ).convert("RGB")
+
+    image = ImageOps.contain(
+        image,
+        size,
+        method=Image.Resampling.LANCZOS
+    )
+
+    canvas = Image.new(
+        "RGB",
+        size,
+        "white"
+    )
+
+    x = (
+        size[0] - image.width
+    ) // 2
+
+    y = (
+        size[1] - image.height
+    ) // 2
+
+    canvas.paste(
+        image,
+        (x, y)
+    )
+
+    return canvas
+
+
 # ============================================================
 # LOAD CLIP MODEL
 # ============================================================
@@ -100,13 +163,15 @@ def load_model():
 
 
 # ============================================================
-# LOAD EMBEDDING DATABASE
+# LOAD DATABASE
 # ============================================================
 
 @st.cache_data
 def load_database():
 
-    if not os.path.exists(EMBEDDINGS_PATH):
+    if not os.path.exists(
+        EMBEDDINGS_PATH
+    ):
 
         return []
 
@@ -124,7 +189,9 @@ def load_database():
 
 def load_metadata():
 
-    if not os.path.exists(METADATA_PATH):
+    if not os.path.exists(
+        METADATA_PATH
+    ):
 
         return {}
 
@@ -151,7 +218,8 @@ def save_metadata(
     filename,
     description,
     location,
-    date_found
+    date_found,
+    category
 ):
 
     os.makedirs(
@@ -162,9 +230,14 @@ def save_metadata(
     metadata = load_metadata()
 
     metadata[filename] = {
+
         "description": description,
+
         "location": location,
-        "date_found": str(date_found)
+
+        "date_found": str(date_found),
+
+        "category": category
     }
 
     with open(
@@ -192,37 +265,6 @@ metadata = load_metadata()
 
 
 # ============================================================
-# PROJECT STATISTICS
-# ============================================================
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-
-    st.metric(
-        "📦 Found Items",
-        len(database)
-    )
-
-with col2:
-
-    st.metric(
-        "🏷️ Categories",
-        len(set(
-            item["category"]
-            for item in database
-        ))
-    )
-
-with col3:
-
-    st.metric(
-        "🧠 AI Model",
-        "CLIP"
-    )
-
-
-# ============================================================
 # IMAGE EMBEDDING
 # ============================================================
 
@@ -236,13 +278,19 @@ def get_image_embedding(image):
     with torch.no_grad():
 
         vision_outputs = model.vision_model(
-            pixel_values=inputs["pixel_values"]
+            pixel_values=inputs[
+                "pixel_values"
+            ]
         )
 
-        image_features = vision_outputs.pooler_output
+        image_features = (
+            vision_outputs.pooler_output
+        )
 
-        image_features = model.visual_projection(
-            image_features
+        image_features = (
+            model.visual_projection(
+                image_features
+            )
         )
 
     image_features = (
@@ -303,6 +351,7 @@ def get_text_embedding(text):
 def find_matches(
     image,
     description="",
+    selected_category="all",
     top_k=5
 ):
 
@@ -340,9 +389,11 @@ def find_matches(
             stored_embedding
         ).item()
 
-        # Keep numerical value safe
         image_similarity = max(
-            min(image_similarity, 1.0),
+            min(
+                image_similarity,
+                1.0
+            ),
             -1.0
         )
 
@@ -360,13 +411,18 @@ def find_matches(
             ).item()
 
             text_similarity = max(
-                min(text_similarity, 1.0),
+                min(
+                    text_similarity,
+                    1.0
+                ),
                 -1.0
             )
 
-            # ------------------------------------------------
-            # MULTIMODAL SCORE
-            # ------------------------------------------------
+        # ----------------------------------------------------
+        # MULTIMODAL SCORE
+        # ----------------------------------------------------
+
+        if text_similarity is not None:
 
             final_score = (
                 0.70 * image_similarity
@@ -378,32 +434,85 @@ def find_matches(
 
             final_score = image_similarity
 
+        # ----------------------------------------------------
+        # CATEGORY BONUS
+        # ----------------------------------------------------
+
+        item_category = (
+            item.get(
+                "category",
+                "other"
+            ).lower()
+        )
+
+        category_match = False
+
+        if (
+            selected_category != "all"
+            and selected_category != "other"
+        ):
+
+            if item_category == selected_category:
+
+                category_match = True
+
+                # Small category bonus
+                final_score += 0.05
+
+        elif selected_category == "other":
+
+            if item_category == "other":
+
+                category_match = True
+
+                final_score += 0.05
+
+        # Keep score valid
         final_score = max(
-            min(final_score, 1.0),
+            min(
+                final_score,
+                1.0
+            ),
             -1.0
         )
 
         results.append(
             {
                 "filename": item["filename"],
-                "category": item["category"],
+
+                "category": item_category,
+
                 "image_path": item["image_path"],
-                "image_similarity": image_similarity,
-                "text_similarity": text_similarity,
-                "final_score": final_score
+
+                "image_similarity":
+                    image_similarity,
+
+                "text_similarity":
+                    text_similarity,
+
+                "final_score":
+                    final_score,
+
+                "category_match":
+                    category_match
             }
         )
 
-    # Sort highest first
+    # ========================================================
+    # SORT
+    # ========================================================
 
-    # Sort by highest score
     results.sort(
         key=lambda x: x["final_score"],
         reverse=True
     )
 
-# Remove duplicate images
+    # ========================================================
+    # REMOVE DUPLICATES
+    # ========================================================
+
     unique_results = []
+
     seen_files = set()
 
     for result in results:
@@ -411,68 +520,20 @@ def find_matches(
         filename = result["filename"]
 
         if filename in seen_files:
+
             continue
 
         seen_files.add(filename)
-        unique_results.append(result)
+
+        unique_results.append(
+            result
+        )
 
         if len(unique_results) >= top_k:
+
             break
 
     return unique_results
-
-
-# ============================================================
-# CATEGORY DETECTION
-# ============================================================
-
-def detect_category(description):
-
-    text = description.lower()
-
-    categories = {
-        "backpack": [
-            "backpack",
-            "bag",
-            "school bag",
-            "college bag",
-            "rucksack"
-        ],
-
-        "bottle": [
-            "bottle",
-            "water bottle",
-            "flask"
-        ],
-
-        "phone": [
-            "phone",
-            "mobile",
-            "smartphone",
-            "iphone",
-            "android"
-        ],
-
-        "wallet": [
-            "wallet",
-            "purse"
-        ],
-
-        "watch": [
-            "watch",
-            "smartwatch"
-        ]
-    }
-
-    for category, keywords in categories.items():
-
-        for keyword in keywords:
-
-            if keyword in text:
-
-                return category
-
-    return "other"
 
 
 # ============================================================
@@ -496,7 +557,43 @@ st.divider()
 
 
 # ============================================================
-# SIDEBAR
+# PROJECT STATISTICS
+# ============================================================
+
+stat1, stat2, stat3 = st.columns(3)
+
+with stat1:
+
+    st.metric(
+        "📦 Registered Items",
+        len(database)
+    )
+
+with stat2:
+
+    st.metric(
+        "🏷️ Categories",
+        len(
+            set(
+                item.get(
+                    "category",
+                    "other"
+                )
+                for item in database
+            )
+        )
+    )
+
+with stat3:
+
+    st.metric(
+        "🧠 AI Model",
+        "CLIP"
+    )
+
+
+# ============================================================
+# SIDEBAR - REGISTER FOUND ITEM
 # ============================================================
 
 st.sidebar.title(
@@ -504,7 +601,7 @@ st.sidebar.title(
 )
 
 st.sidebar.caption(
-    "Register an item so other users can find it."
+    "Add a found item so other users can search for it."
 )
 
 
@@ -513,9 +610,16 @@ found_image = st.sidebar.file_uploader(
     type=[
         "jpg",
         "jpeg",
-        "png"
+        "png",
+        "webp"
     ],
     key="found_image"
+)
+
+
+found_category = category_selector(
+    "🏷️ Select item category",
+    "found"
 )
 
 
@@ -529,14 +633,14 @@ found_description = st.sidebar.text_area(
 
 
 found_location = st.sidebar.text_input(
-    "Where was it found?",
+    "📍 Where was it found?",
     placeholder="Example: University Library",
     key="found_location"
 )
 
 
 found_date = st.sidebar.date_input(
-    "Date found",
+    "📅 Date found",
     key="found_date"
 )
 
@@ -556,6 +660,12 @@ if st.sidebar.button(
             "❌ Please upload an image."
         )
 
+    elif found_category == "other":
+
+        st.sidebar.error(
+            "❌ Please enter a custom category."
+        )
+
     elif not found_description.strip():
 
         st.sidebar.error(
@@ -573,7 +683,7 @@ if st.sidebar.button(
         try:
 
             # ------------------------------------------------
-            # Create directory
+            # CREATE DIRECTORY
             # ------------------------------------------------
 
             os.makedirs(
@@ -582,7 +692,7 @@ if st.sidebar.button(
             )
 
             # ------------------------------------------------
-            # Create unique filename
+            # UNIQUE FILENAME
             # ------------------------------------------------
 
             extension = os.path.splitext(
@@ -607,7 +717,7 @@ if st.sidebar.button(
             )
 
             # ------------------------------------------------
-            # Save image
+            # SAVE IMAGE
             # ------------------------------------------------
 
             with open(
@@ -620,15 +730,7 @@ if st.sidebar.button(
                 )
 
             # ------------------------------------------------
-            # Detect category
-            # ------------------------------------------------
-
-            category = detect_category(
-                found_description
-            )
-
-            # ------------------------------------------------
-            # Generate CLIP embedding
+            # GENERATE EMBEDDING
             # ------------------------------------------------
 
             with st.spinner(
@@ -637,37 +739,39 @@ if st.sidebar.button(
 
                 add_item_to_database(
                     save_path,
-                    category,
+                    found_category,
                     unique_filename
                 )
 
             # ------------------------------------------------
-            # Save metadata
+            # SAVE METADATA
             # ------------------------------------------------
 
             save_metadata(
                 unique_filename,
                 found_description,
                 found_location,
-                found_date
+                found_date,
+                found_category
             )
 
             # ------------------------------------------------
-            # Clear cached database
+            # CLEAR CACHE
             # ------------------------------------------------
 
             st.cache_data.clear()
-
-            # Reload database
-            database = load_database()
 
             st.sidebar.success(
                 "✅ Found item registered successfully!"
             )
 
             st.sidebar.info(
-                f"Category detected: {category.title()}"
+                f"🏷️ Category: "
+                f"{found_category.title()}"
             )
+
+            # Reload
+            database = load_database()
 
         except Exception as e:
 
@@ -677,7 +781,7 @@ if st.sidebar.button(
 
 
 # ============================================================
-# DATABASE STATUS
+# SIDEBAR STATUS
 # ============================================================
 
 st.sidebar.divider()
@@ -706,9 +810,16 @@ uploaded_file = st.file_uploader(
     type=[
         "jpg",
         "jpeg",
-        "png"
+        "png",
+        "webp"
     ],
     key="lost_image"
+)
+
+
+lost_category = category_selector(
+    "🏷️ Select lost item category",
+    "lost"
 )
 
 
@@ -753,7 +864,7 @@ if uploaded_file is not None:
     )
 
     # --------------------------------------------------------
-    # IMAGE
+    # UPLOADED IMAGE
     # --------------------------------------------------------
 
     with col1:
@@ -770,38 +881,31 @@ if uploaded_file is not None:
 
     with col2:
 
-        st.write(
+        st.markdown(
             "### 📋 Item Information"
         )
 
-        if description.strip():
+        st.write(
+            f"**Description:** "
+            f"{description if description.strip() else 'Not provided'}"
+        )
 
-            st.write(
-                f"**Description:** {description}"
-            )
-
-        if location.strip():
-
-            st.write(
-                f"**Location:** {location}"
-            )
+        st.write(
+            f"**Location:** "
+            f"{location if location.strip() else 'Not provided'}"
+        )
 
         st.write(
             f"**Date lost:** {date}"
         )
 
-        if description.strip():
-
-            detected_category = detect_category(
-                description
-            )
-
-            st.info(
-                f"🤖 AI detected category: "
-                f"**{detected_category.title()}**"
-            )
+        st.info(
+            f"🏷️ Selected category: "
+            f"**{lost_category.title()}**"
+        )
 
     st.divider()
+
 
     # ========================================================
     # SEARCH BUTTON
@@ -828,6 +932,7 @@ if uploaded_file is not None:
                 matches = find_matches(
                     image,
                     description=description,
+                    selected_category=lost_category,
                     top_k=5
                 )
 
@@ -842,6 +947,12 @@ if uploaded_file is not None:
             # =================================================
             # DISPLAY RESULTS
             # =================================================
+
+            if not matches:
+
+                st.warning(
+                    "No matching items found."
+                )
 
             for rank, match in enumerate(
                 matches,
@@ -873,39 +984,56 @@ if uploaded_file is not None:
                 )
 
                 # ------------------------------------------------
-                # MATCH IMAGE
+                # RESULT IMAGE
                 # ------------------------------------------------
 
                 with col1:
 
-                    # Resolve image path safely
-                    image_path = match["image_path"]
+                    image_path = match[
+                        "image_path"
+                    ]
 
-                    if not os.path.isabs(image_path):
+                    if not os.path.isabs(
+                        image_path
+                    ):
 
                         image_path = os.path.abspath(
                             image_path
                         )
 
-                    if os.path.exists(image_path):
+                    if os.path.exists(
+                        image_path
+                    ):
 
-                        display_image = prepare_display_image(
-                        image_path,
-                        size = (500,400)
-                    )
+                        try:
 
-                        st.image(
-                        display_image,
-                        width=500
-                        )
+                            display_image = (
+                                prepare_display_image(
+                                    image_path,
+                                    size=(320, 260)
+                                )
+                            )
+
+                            st.image(
+                                display_image,
+                                width=320
+                            )
+
+                        except Exception:
+
+                            st.warning(
+                                "⚠️ Unable to display image."
+                            )
 
                     else:
 
                         st.warning(
-                        "⚠️ Image unavailable"
-                    )
+                            "⚠️ Image unavailable"
+                        )
+
+
                 # ------------------------------------------------
-                # MATCH INFORMATION
+                # RESULT INFORMATION
                 # ------------------------------------------------
 
                 with col2:
@@ -920,9 +1048,23 @@ if uploaded_file is not None:
                         f"{match['filename']}"
                     )
 
-                    # ------------------------------------------------
-                    # SCORE
-                    # ------------------------------------------------
+                    # Category match indicator
+
+                    if match[
+                        "category_match"
+                    ]:
+
+                        st.success(
+                            "🏷️ Category matched"
+                        )
+
+                    else:
+
+                        st.info(
+                            "🏷️ Visual/text candidate"
+                        )
+
+                    # Overall score
 
                     st.metric(
                         "🏆 Overall Match Score",
@@ -939,18 +1081,14 @@ if uploaded_file is not None:
                         )
                     )
 
-                    # ------------------------------------------------
-                    # IMAGE SCORE
-                    # ------------------------------------------------
+                    # Image score
 
                     st.write(
                         f"📷 **Image similarity:** "
                         f"{image_score:.2f}%"
                     )
 
-                    # ------------------------------------------------
-                    # TEXT SCORE
-                    # ------------------------------------------------
+                    # Text score
 
                     if text_score is not None:
 
@@ -959,32 +1097,38 @@ if uploaded_file is not None:
                             f"{text_score:.2f}%"
                         )
 
-                    # ------------------------------------------------
-                    # MATCH CONFIDENCE
-                    # ------------------------------------------------
+                    # Confidence
 
                     if score >= 80:
+
                         st.success(
-                            "🟢 Strong Match — This item is highly similar."
+                            "🟢 Strong Match — "
+                            "Highly similar item."
                         )
 
                     elif score >= 70:
+
                         st.warning(
-                             "🟡 Good Candidate — Please verify the item."
-                            )
+                            "🟡 Good Candidate — "
+                            "Please verify the item."
+                        )
 
                     elif score >= 60:
+
                         st.warning(
-                            "🟠 Possible Match — Additional verification recommended."
+                            "🟠 Possible Match — "
+                            "Additional verification recommended."
                         )
 
                     else:
+
                         st.info(
-                            "🔴 Low Match — This item may not be the same."
+                            "🔴 Low Match — "
+                            "This may not be the same item."
                         )
 
                     # ------------------------------------------------
-                    # REGISTERED ITEM DETAILS
+                    # FOUND ITEM DETAILS
                     # ------------------------------------------------
 
                     item_metadata = metadata.get(
@@ -993,13 +1137,12 @@ if uploaded_file is not None:
 
                     if item_metadata:
 
-                        st.write(
-                            "---"
-                        )
+                        st.write("---")
 
                         st.write(
                             "📍 **Found at:** "
-                            + item_metadata.get(
+                            +
+                            item_metadata.get(
                                 "location",
                                 "Unknown"
                             )
@@ -1007,18 +1150,29 @@ if uploaded_file is not None:
 
                         st.write(
                             "📅 **Date found:** "
-                            + item_metadata.get(
+                            +
+                            item_metadata.get(
                                 "date_found",
                                 "Unknown"
                             )
                         )
 
                         st.write(
-                            "📝 **Found item description:** "
-                            + item_metadata.get(
+                            "📝 **Found description:** "
+                            +
+                            item_metadata.get(
                                 "description",
                                 "Not available"
                             )
+                        )
+
+                        st.write(
+                            "🏷️ **Category:** "
+                            +
+                            item_metadata.get(
+                                "category",
+                                match["category"]
+                            ).title()
                         )
 
                 st.divider()
@@ -1032,59 +1186,77 @@ with st.expander(
     "🤖 How does the AI work?"
 ):
 
-    st.write(
+    st.markdown(
         """
-        **1️⃣ Upload**
+        ### 1️⃣ Upload
 
         Upload a photo of your lost item.
 
-        **2️⃣ CLIP Vision**
+        ### 2️⃣ Select Category
 
-        The CLIP model converts the image into
-        a numerical embedding representing its
-        visual characteristics.
+        Choose the item category or enter
+        your own custom category.
 
-        **3️⃣ Text Understanding**
+        ### 3️⃣ CLIP Vision
 
-        Your description is also converted into
+        CLIP converts the image into a
+        numerical embedding representing
+        its visual characteristics.
+
+        ### 4️⃣ Text Understanding
+
+        Your description is converted into
         a CLIP text embedding.
 
-        **4️⃣ Multimodal Matching**
+        ### 5️⃣ Multimodal Matching
 
-        The system combines image and text
-        similarity to rank registered found items.
+        The system combines image similarity,
+        description similarity and category
+        information.
 
-        **5️⃣ Top Matches**
+        ### 6️⃣ Ranking
 
-        The five most similar found items are
-        displayed with similarity scores.
+        The most relevant found items are
+        ranked and displayed with scores.
         """
     )
 
 
+# ============================================================
+# PROFESSIONAL PROJECT INFORMATION
+# ============================================================
 
+st.divider()
 
-st.markdown("---")
+st.subheader(
+    "🚀 AI Matching Technology"
+)
 
-st.subheader("🤖 How AI Matching Works")
+info1, info2, info3 = st.columns(3)
 
-st.markdown("""
-### 1️⃣ Image Understanding
-The uploaded image is processed using **OpenAI CLIP**.
+with info1:
 
-### 2️⃣ Feature Extraction
-CLIP converts the image into a numerical **embedding vector**.
+    st.info(
+        "🖼️ **Computer Vision**\n\n"
+        "CLIP understands visual features "
+        "from uploaded item images."
+    )
 
-### 3️⃣ Similarity Search
-The AI compares the uploaded image embedding with embeddings
-of registered found items using **cosine similarity**.
+with info2:
 
-### 4️⃣ Ranking
-The system ranks the found items from highest to lowest similarity.
+    st.info(
+        "📝 **Multimodal AI**\n\n"
+        "Image and text descriptions are "
+        "combined for better matching."
+    )
 
-### 5️⃣ Smart Match
-The highest-scoring items are presented as potential matches.
-""")
+with info3:
+
+    st.info(
+        "🏷️ **Dynamic Categories**\n\n"
+        "Users can choose existing categories "
+        "or create completely new ones."
+    )
 
 
 # ============================================================
@@ -1098,5 +1270,5 @@ st.caption(
 )
 
 st.caption(
-    "AI-assisted matching • Image + Text Similarity"
+    "AI-assisted matching • Image + Text Similarity • Dynamic Categories"
 )
