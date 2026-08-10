@@ -33,23 +33,90 @@ MIN_FINAL_SCORE = 0.70
 
 def resolve_image_path(image_path, filename):
     """
-    Resolve image paths safely for both local and Streamlit deployment.
+    Resolve image paths safely for both local Windows
+    and Streamlit Cloud (Linux).
     """
 
     candidates = []
 
+    # Project root
+    project_root = os.path.dirname(
+        os.path.abspath(__file__)
+    )
+
+    # --------------------------------------------------------
+    # 1. Stored image path
+    # --------------------------------------------------------
+
     if image_path:
-        candidates.append(image_path)
+
+        # Convert Windows backslashes to Linux-style slashes
+        clean_path = str(image_path).replace("\\", "/")
+
+        candidates.append(clean_path)
+
+        # Make it relative to project root
+        candidates.append(
+            os.path.join(
+                project_root,
+                clean_path
+            )
+        )
+
+    # --------------------------------------------------------
+    # 2. Search using filename
+    # --------------------------------------------------------
 
     if filename:
+
         candidates.extend([
-            os.path.join("data", "registered_items", filename),
-            os.path.join("data", "found_items", filename),
+            os.path.join(
+                project_root,
+                "data",
+                "registered_items",
+                filename
+            ),
+
+            os.path.join(
+                project_root,
+                "data",
+                "found_items",
+                filename
+            )
         ])
 
+    # --------------------------------------------------------
+    # 3. Check candidates
+    # --------------------------------------------------------
+
     for path in candidates:
-        if path and os.path.exists(path):
+
+        if path and os.path.isfile(path):
             return path
+
+    # --------------------------------------------------------
+    # 4. Search recursively inside data folder
+    # --------------------------------------------------------
+
+    if filename:
+
+        data_folder = os.path.join(
+            project_root,
+            "data"
+        )
+
+        if os.path.exists(data_folder):
+
+            for root, dirs, files in os.walk(
+                data_folder
+            ):
+
+                if filename in files:
+
+                    return os.path.join(
+                        root,
+                        filename
+                    )
 
     return None
 
