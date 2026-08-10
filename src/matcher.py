@@ -1,5 +1,5 @@
 import pickle
-
+import os
 import torch
 from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
@@ -79,6 +79,58 @@ def get_image_embedding(image_path):
 # FIND MATCHES
 # ============================================================
 
+def resolve_image_path(image_path):
+    """
+    Resolve image paths so they work both locally and on Streamlit Cloud.
+    """
+
+    if not image_path:
+        return None
+
+    # Normalize Windows/Linux path separators
+    image_path = str(image_path).replace("\\", "/")
+
+    # 1. Direct path
+    if os.path.exists(image_path):
+        return image_path
+
+    # 2. Try relative to project root
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..")
+    )
+
+    relative_path = os.path.join(
+        project_root,
+        image_path
+    )
+
+    if os.path.exists(relative_path):
+        return relative_path
+
+    # 3. Search common image folders by filename
+    filename = os.path.basename(image_path)
+
+    search_folders = [
+        os.path.join(project_root, "data"),
+        os.path.join(project_root, "data", "found_images"),
+        os.path.join(project_root, "data", "images"),
+        os.path.join(project_root, "data", "found_items"),
+        os.path.join(project_root, "data", "test_images"),
+    ]
+
+    for folder in search_folders:
+
+        if not os.path.exists(folder):
+            continue
+
+        for root, dirs, files in os.walk(folder):
+
+            if filename in files:
+                return os.path.join(root, filename)
+
+    return None
+
+
 def find_matches(
     image_path,
     description=None,
@@ -144,14 +196,14 @@ def find_matches(
         if similarity < min_similarity:
             continue
 
-        results.append(
-            {
-                "filename": item["filename"],
-                "category": item["category"],
-                "image_path": item["image_path"],
-                "similarity": similarity
-            }
-        )
+        results.append({
+            "filename": item["filename"],
+            "category": item["category"],
+            "image_path": resolve_image_path(
+            item["image_path"]
+            ),
+            "similarity": similarity
+        })
 
     # ========================================================
     # SORT BY HIGHEST SIMILARITY
