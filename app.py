@@ -23,6 +23,35 @@ EMBEDDINGS_PATH = "models/image_embeddings.pkl"
 REGISTERED_ITEMS_PATH = "data/registered_items"
 
 METADATA_PATH = "data/registered_items_metadata.json"
+# ============================================================
+# MATCHING SETTINGS
+# ============================================================
+
+MIN_IMAGE_SIMILARITY = 0.72
+MIN_FINAL_SCORE = 0.70
+
+
+def resolve_image_path(image_path, filename):
+    """
+    Resolve image paths safely for both local and Streamlit deployment.
+    """
+
+    candidates = []
+
+    if image_path:
+        candidates.append(image_path)
+
+    if filename:
+        candidates.extend([
+            os.path.join("data", "registered_items", filename),
+            os.path.join("data", "found_items", filename),
+        ])
+
+    for path in candidates:
+        if path and os.path.exists(path):
+            return path
+
+    return None
 
 
 # ============================================================
@@ -356,17 +385,13 @@ def find_matches(
 ):
 
     if not database:
-
         return []
 
-    image_embedding = get_image_embedding(
-        image
-    )
+    image_embedding = get_image_embedding(image)
 
     text_embedding = None
 
     if description.strip():
-
         text_embedding = get_text_embedding(
             description
         )
@@ -375,14 +400,47 @@ def find_matches(
 
     for item in database:
 
+        item_category = (
+            item.get(
+                "category",
+                "other"
+            )
+            .lower()
+            .strip()
+        )
+
+        # ====================================================
+        # STRICT CATEGORY FILTER
+        # ====================================================
+
+        if (
+            selected_category != "all"
+            and selected_category.strip()
+            and selected_category.lower() != "all"
+        ):
+
+            selected = selected_category.lower().strip()
+
+            if item_category != selected:
+                continue
+
+        # ====================================================
+        # IMAGE SIMILARITY
+        # ====================================================
+
         stored_embedding = torch.tensor(
             item["embedding"],
             dtype=torch.float32
         )
 
-        # ----------------------------------------------------
-        # IMAGE SIMILARITY
-        # ----------------------------------------------------
+        stored_embedding = (
+            stored_embedding
+            / stored_embedding.norm(
+                p=2,
+                dim=-1,
+                keepdim=True
+            )
+        )
 
         image_similarity = torch.dot(
             image_embedding,
@@ -397,9 +455,16 @@ def find_matches(
             -1.0
         )
 
-        # ----------------------------------------------------
+        # ====================================================
+        # EARLY IMAGE FILTER
+        # ====================================================
+
+        if image_similarity < MIN_IMAGE_SIMILARITY:
+            continue
+
+        # ====================================================
         # TEXT SIMILARITY
-        # ----------------------------------------------------
+        # ====================================================
 
         text_similarity = None
 
@@ -418,9 +483,9 @@ def find_matches(
                 -1.0
             )
 
-        # ----------------------------------------------------
-        # MULTIMODAL SCORE
-        # ----------------------------------------------------
+        # ====================================================
+        # FINAL MULTIMODAL SCORE
+        # ====================================================
 
         if text_similarity is not None:
 
@@ -434,40 +499,20 @@ def find_matches(
 
             final_score = image_similarity
 
-        # ----------------------------------------------------
-        # CATEGORY BONUS
-        # ----------------------------------------------------
+        # ====================================================
+        # CATEGORY MATCH
+        # ====================================================
 
-        item_category = (
-            item.get(
-                "category",
-                "other"
-            ).lower()
+        category_match = (
+            selected_category == "all"
+            or item_category ==
+            selected_category.lower().strip()
         )
 
-        category_match = False
+        # Small bonus for category match
+        if category_match:
+            final_score += 0.03
 
-        if (
-            selected_category != "all"
-            and selected_category != "other"
-        ):
-
-            if item_category == selected_category:
-
-                category_match = True
-
-                # Small category bonus
-                final_score += 0.05
-
-        elif selected_category == "other":
-
-            if item_category == "other":
-
-                category_match = True
-
-                final_score += 0.05
-
-        # Keep score valid
         final_score = max(
             min(
                 final_score,
@@ -476,25 +521,22 @@ def find_matches(
             -1.0
         )
 
+        # ====================================================
+        # FINAL QUALITY FILTER
+        # ====================================================
+
+        if final_score < MIN_FINAL_SCORE:
+            continue
+
         results.append(
             {
                 "filename": item["filename"],
-
                 "category": item_category,
-
                 "image_path": item["image_path"],
-
-                "image_similarity":
-                    image_similarity,
-
-                "text_similarity":
-                    text_similarity,
-
-                "final_score":
-                    final_score,
-
-                "category_match":
-                    category_match
+                "image_similarity": image_similarity,
+                "text_similarity": text_similarity,
+                "final_score": final_score,
+                "category_match": category_match
             }
         )
 
@@ -520,17 +562,13 @@ def find_matches(
         filename = result["filename"]
 
         if filename in seen_files:
-
             continue
 
         seen_files.add(filename)
 
-        unique_results.append(
-            result
-        )
+        unique_results.append(result)
 
         if len(unique_results) >= top_k:
-
             break
 
     return unique_results
@@ -929,7 +967,7 @@ if uploaded_file is not None:
                 "🤖 AI is searching for matching items..."
             ):
 
-                matches = find_matches(
+                matches = find_matches( 
                     image,
                     description=description,
                     selected_category=lost_category,
@@ -950,9 +988,34 @@ if uploaded_file is not None:
 
             if not matches:
 
-                st.warning(
-                    "No matching items found."
+                st.markdown(
+                    """
+                    <div style="
+                        padding: 25px;
+                        border-radius: 15px;
+                        background: linear-gradient(135deg, #fff3cd, #ffe8a1);
+                        border: 1px solid #f0c36d;
+                        text-align: center;
+                        margin: 20px 0;
+                    ">
+
+                    <h2>🔍 No Matching Item Found</h2>
+
+                    <p style="font-size: 17px;">
+                        We couldn't find a sufficiently similar registered item.
+                    </p>
+
+                    <p>
+                    💡Try uploading another photo, checking the category,
+                        or registering the found item in our database.
+                     </p>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
                 )
+
+                st.stop()
 
             for rank, match in enumerate(
                 matches,
@@ -989,37 +1052,26 @@ if uploaded_file is not None:
 
                 with col1:
 
-                    image_path = match[
-                        "image_path"
-                    ]
+                    image_path = resolve_image_path(
+                        match.get("image_path"),
+                        match.get("filename")
+                    )
 
-                    if not os.path.isabs(
-                        image_path
-                    ):
-
-                        image_path = os.path.abspath(
-                            image_path
-                        )
-
-                    if os.path.exists(
-                        image_path
-                    ):
+                    if image_path and os.path.exists(image_path):
 
                         try:
 
-                            display_image = (
-                                prepare_display_image(
-                                    image_path,
-                                    size=(320, 260)
-                                )
+                            display_image = prepare_display_image(
+                                image_path,
+                                size=(320, 260)
                             )
 
                             st.image(
-                                display_image,
-                                width=320
+                            display_image,
+                            width=320
                             )
 
-                        except Exception:
+                        except Exception as e:
 
                             st.warning(
                                 "⚠️ Unable to display image."
@@ -1030,7 +1082,6 @@ if uploaded_file is not None:
                         st.warning(
                             "⚠️ Image unavailable"
                         )
-
 
                 # ------------------------------------------------
                 # RESULT INFORMATION

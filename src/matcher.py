@@ -5,9 +5,20 @@ from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
 
 
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
 MODEL_NAME = "openai/clip-vit-base-patch32"
 EMBEDDINGS_PATH = "models/image_embeddings.pkl"
 
+# Minimum similarity required to consider an item a match
+MIN_SIMILARITY = 0.55
+
+
+# ============================================================
+# LOAD CLIP MODEL
+# ============================================================
 
 print("Loading CLIP model...")
 
@@ -19,12 +30,19 @@ model.eval()
 print("CLIP loaded successfully!")
 
 
-# Load stored embeddings
+# ============================================================
+# LOAD STORED EMBEDDINGS
+# ============================================================
+
 with open(EMBEDDINGS_PATH, "rb") as file:
     database = pickle.load(file)
 
 print(f"Loaded {len(database)} stored image embeddings.")
 
+
+# ============================================================
+# IMAGE EMBEDDING
+# ============================================================
 
 def get_image_embedding(image_path):
 
@@ -47,6 +65,7 @@ def get_image_embedding(image_path):
             image_features
         )
 
+    # Normalize embedding
     image_features = image_features / image_features.norm(
         p=2,
         dim=-1,
@@ -56,38 +75,121 @@ def get_image_embedding(image_path):
     return image_features.squeeze()
 
 
-def find_matches(image_path, top_k=5):
+# ============================================================
+# FIND MATCHES
+# ============================================================
+
+def find_matches(
+    image_path,
+    description=None,
+    selected_category=None,
+    top_k=5,
+    min_similarity=MIN_SIMILARITY
+):
 
     query_embedding = get_image_embedding(image_path)
 
     results = []
 
+    # Normalize selected category
+    category = None
+
+    if selected_category:
+        category = selected_category.strip().lower()
+
+    # --------------------------------------------------------
+    # COMPARE WITH DATABASE
+    # --------------------------------------------------------
+
     for item in database:
+
+        item_category = str(
+            item.get("category", "")
+        ).strip().lower()
+
+        # ----------------------------------------------------
+        # CATEGORY FILTER
+        # ----------------------------------------------------
+        # If user selected a category, only compare with
+        # images belonging to that category.
+        # ----------------------------------------------------
+
+        if category:
+
+            if item_category != category:
+                continue
+
+        # ----------------------------------------------------
+        # STORED EMBEDDING
+        # ----------------------------------------------------
 
         stored_embedding = torch.tensor(
             item["embedding"],
             dtype=torch.float32
         )
 
+        # ----------------------------------------------------
+        # COSINE SIMILARITY
+        # ----------------------------------------------------
+
         similarity = torch.dot(
             query_embedding,
             stored_embedding
         ).item()
 
-        results.append({
-            "filename": item["filename"],
-            "category": item["category"],
-            "image_path": item["image_path"],
-            "similarity": similarity
-        })
+        # ----------------------------------------------------
+        # SIMILARITY THRESHOLD
+        # ----------------------------------------------------
+
+        if similarity < min_similarity:
+            continue
+
+        results.append(
+            {
+                "filename": item["filename"],
+                "category": item["category"],
+                "image_path": item["image_path"],
+                "similarity": similarity
+            }
+        )
+
+    # ========================================================
+    # SORT BY HIGHEST SIMILARITY
+    # ========================================================
 
     results.sort(
         key=lambda x: x["similarity"],
         reverse=True
     )
 
-    return results[:top_k]
+    # ========================================================
+    # REMOVE DUPLICATE FILES
+    # ========================================================
 
+    unique_results = []
+
+    seen_files = set()
+
+    for result in results:
+
+        filename = result["filename"]
+
+        if filename in seen_files:
+            continue
+
+        seen_files.add(filename)
+
+        unique_results.append(result)
+
+        if len(unique_results) >= top_k:
+            break
+
+    return unique_results
+
+
+# ============================================================
+# TEST FROM TERMINAL
+# ============================================================
 
 if __name__ == "__main__":
 
@@ -98,18 +200,42 @@ if __name__ == "__main__":
         "Enter the path of a test image: "
     )
 
-    matches = find_matches(image_path)
+    category = input(
+        "Enter category (or press Enter for all): "
+    ).strip()
+
+    if category == "":
+        category = None
+
+    matches = find_matches(
+        image_path,
+        category=category,
+        top_k=5
+    )
 
     print("\nTop Matches")
     print("=" * 40)
 
-    for rank, match in enumerate(matches, 1):
-
-        score = match["similarity"] * 100
+    if not matches:
 
         print(
-            f"{rank}. "
-            f"{match['filename']} | "
-            f"{match['category']} | "
-            f"{score:.2f}%"
+            "No sufficiently similar matching item found."
         )
+
+    else:
+
+        for rank, match in enumerate(
+            matches,
+            start=1
+        ):
+
+            score = (
+                match["similarity"] * 100
+            )
+
+            print(
+                f"{rank}. "
+                f"{match['filename']} | "
+                f"{match['category']} | "
+                f"{score:.2f}%"
+            )
