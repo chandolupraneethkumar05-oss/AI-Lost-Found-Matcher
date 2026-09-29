@@ -9,466 +9,567 @@ from src.database import db
 from src.ai_engine import ai_engine
 
 # ============================================================
-# PAGE CONFIGURATION & WEBLIUM DESIGN SYSTEM
+# PAGE CONFIGURATION — CLASSIC INSTITUTIONAL DESIGN
 # ============================================================
 st.set_page_config(
-    page_title="FindSphere — Campus & Transit Lost & Found Recovery Network",
-    page_icon="🔎",
+    page_title="Central Lost Property Office — Campus & Community Network",
+    page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Weblium-Inspired CSS
+# Classic Heritage Styling: Deep Oxford Navy, Warm Linen Cream, Heritage Gold
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        color: #0F172A;
+    /* Global Page Canvas */
+    .stApp {
+        background-color: #FAF8F5;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #1F2937;
     }
     
-    /* Classic Top Header */
-    .app-header {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    /* Clean Classic Institutional Header */
+    .classic-header {
+        background-color: #1B2A4A;
         color: #FFFFFF;
-        padding: 32px 36px;
-        border-radius: 14px;
+        padding: 40px 48px;
+        border-radius: 8px;
         margin-bottom: 28px;
-        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.15);
+        border-bottom: 4px solid #C48208;
+        box-shadow: 0 4px 12px rgba(27, 42, 74, 0.08);
     }
-    .app-header h1 {
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin-bottom: 8px;
-        color: #FFFFFF !important;
-    }
-    .app-header p {
-        font-size: 1.05rem;
-        color: #94A3B8;
-        max-width: 800px;
-        line-height: 1.5;
-        margin: 0;
-    }
-    .badge-pill {
-        display: inline-block;
-        background-color: rgba(37, 99, 235, 0.2);
-        color: #60A5FA;
-        border: 1px solid rgba(96, 165, 250, 0.3);
-        padding: 4px 12px;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin-bottom: 12px;
-    }
-    
-    /* Metrics Row */
-    .metric-container {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
-        padding: 16px;
-        text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .metric-value {
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: #0F172A;
-    }
-    .metric-label {
+    .classic-dept {
         font-size: 0.8125rem;
-        color: #64748B;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #E2DDD5;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .classic-title {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 2.35rem;
+        font-weight: 700;
+        color: #FFFFFF !important;
+        letter-spacing: -0.01em;
+        margin-bottom: 12px;
+        line-height: 1.2;
+    }
+    .classic-subtitle {
+        font-size: 1rem;
+        color: #CBD5E1;
+        max-width: 760px;
+        line-height: 1.6;
+        margin: 0;
+        font-weight: 400;
     }
     
-    /* Item Cards */
+    /* Statistics Ribbon */
+    .stats-ribbon {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+    .stat-box {
+        background-color: #FFFFFF;
+        border: 1px solid #E5E0D8;
+        border-radius: 6px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .stat-val {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1B2A4A;
+        line-height: 1;
+        margin-bottom: 6px;
+    }
+    .stat-desc {
+        font-size: 0.8125rem;
+        color: #6B7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    
+    /* Clean Item Cards */
     .item-card {
         background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 18px;
-        margin-bottom: 16px;
-        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
-        transition: transform 0.2s ease;
+        border: 1px solid #E5E0D8;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .item-card:hover {
         border-color: #CBD5E1;
-        box-shadow: 0 8px 16px -2px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
     }
-    .score-badge {
-        font-size: 0.8125rem;
+    .card-title {
+        font-size: 1.0625rem;
         font-weight: 700;
-        padding: 4px 10px;
-        border-radius: 9999px;
-        display: inline-block;
+        color: #1B2A4A;
+        margin-bottom: 6px;
     }
-    .score-high { background-color: #DCFCE7; color: #15803D; }
-    .score-medium { background-color: #DBEAFE; color: #1D4ED8; }
-    .score-low { background-color: #F1F5F9; color: #475569; }
+    .card-detail {
+        font-size: 0.85rem;
+        color: #4B5563;
+        margin: 3px 0;
+        line-height: 1.5;
+    }
     
-    /* Tab Styling */
+    /* Badges */
+    .badge-match {
+        background-color: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .badge-high-match {
+        background-color: #DCFCE7;
+        color: #166534;
+        border: 1px solid #BBF7D0;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .badge-custody {
+        background-color: #F3F4F6;
+        color: #374151;
+        border: 1px solid #E5E7EB;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Clean Tab Navigation */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
-        border-bottom: 2px solid #E2E8F0;
+        gap: 8px;
+        border-bottom: 1px solid #E5E0D8;
         padding-bottom: 4px;
+        margin-bottom: 24px;
     }
     .stTabs [data-baseweb="tab"] {
         font-weight: 600;
-        font-size: 0.95rem;
-        color: #475569;
-        border-radius: 6px;
-        padding: 10px 18px;
+        font-size: 0.9375rem;
+        color: #4B5563;
+        border-radius: 4px;
+        padding: 10px 20px;
+        background-color: transparent;
     }
     .stTabs [aria-selected="true"] {
-        color: #2563EB !important;
-        background-color: #EFF6FF !important;
+        color: #1B2A4A !important;
+        background-color: #FFFFFF !important;
+        border-bottom: 3px solid #1B2A4A !important;
     }
     
-    /* Buttons */
+    /* Classic Buttons */
     div.stButton > button {
-        background-color: #2563EB;
+        background-color: #1B2A4A;
         color: #FFFFFF;
         font-weight: 600;
-        border-radius: 8px;
-        border: none;
-        padding: 10px 24px;
-        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        border-radius: 5px;
+        border: 1px solid #1B2A4A;
+        padding: 8px 20px;
+        transition: all 0.15s ease;
     }
     div.stButton > button:hover {
-        background-color: #1D4ED8;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        background-color: #0F172A;
+        border-color: #0F172A;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+    }
+    
+    /* Clean Callout */
+    .notice-box {
+        background-color: #F8F9FA;
+        border-left: 3px solid #1B2A4A;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        font-size: 0.875rem;
+        color: #374151;
+        border-radius: 0 4px 4px 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header Banner
+# Classic Header Banner
 st.markdown("""
-<div class="app-header">
-    <span class="badge-pill">● Official Custody Protocol • Section 12-B</span>
-    <h1>FindSphere Recovery Network</h1>
-    <p>Intelligent community and campus lost & found management system. Utilizing OpenAI CLIP multimodal embeddings to visually cross-match and reunite belongings with verified owners.</p>
+<div class="classic-header">
+    <div class="classic-dept">
+        <span>🏛️ Campus & Public Transit Services</span>
+        <span>•</span>
+        <span>Central Custody Desk</span>
+    </div>
+    <h1 class="classic-title">Lost Property Office</h1>
+    <p class="classic-subtitle">
+        The official repository for misplaced personal items across campus buildings, lecture halls, and transit hubs. Search recent hand-ins by photograph or description, register found property, and arrange verified collection.
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
-# Metrics Ribbon
+# Live Statistics Ribbon
 stats = db.get_statistics()
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['total_found']}</div><div class="metric-label">Items in Vault Custody</div></div>""", unsafe_allow_html=True)
-with col2:
-    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['success_rate_percent']}%</div><div class="metric-label">Verified Reconnection Rate</div></div>""", unsafe_allow_html=True)
-with col3:
-    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['avg_recovery_hours']} hrs</div><div class="metric-label">Avg. Resolution Window</div></div>""", unsafe_allow_html=True)
-with col4:
-    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['active_custody_zones']}</div><div class="metric-label">Campus Custody Desks</div></div>""", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="stats-ribbon">
+    <div class="stat-box">
+        <div class="stat-val">{stats['total_found']}</div>
+        <div class="stat-desc">Items in Safe Custody</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-val">{stats['success_rate_percent']}%</div>
+        <div class="stat-desc">Successful Reconnection Rate</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-val">{stats['avg_recovery_hours']} hrs</div>
+        <div class="stat-desc">Average Claim Time</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-val">6 Hubs</div>
+        <div class="stat-desc">Security Collection Points</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-st.write("")
-
-# Navigation Tabs
-tab_match, tab_catalog, tab_found, tab_lost, tab_claims = st.tabs([
-    "🔎 Visual Match Studio",
-    "📦 Custody Vault Catalog",
-    "📥 Register Found Item",
-    "📝 File Lost Inquiry",
-    "🛡️ Verification & Claims Desk"
+# Clear, human-readable tabs
+tab_search, tab_catalog, tab_report_found, tab_report_lost, tab_desk = st.tabs([
+    "🔍 Search Lost Property",
+    "📋 Catalog of Handed-In Items",
+    "📥 Report an Item You Found",
+    "📝 Register a Missing Item",
+    "🛡️ Verification & Collection Desk"
 ])
 
-
 # ============================================================
-# TAB 1: VISUAL MATCH STUDIO
+# TAB 1: SEARCH LOST PROPERTY
 # ============================================================
-with tab_match:
-    st.subheader("Locate Your Missing Valuable")
-    st.caption("Upload a photograph or provide details. Our CLIP multimodal model compares visual features against all items currently in campus custody.")
+with tab_search:
+    st.markdown("""
+    <div class="notice-box">
+        <strong>How to search:</strong> Upload a clear photograph of your missing belonging, or enter distinctive words (brand, model, color, or markings). Our system will compare it against all items held in campus custody lockers.
+    </div>
+    """, unsafe_allow_html=True)
     
-    col_input, col_results = st.columns([1, 1.2], gap="large")
+    col_search_left, col_search_right = st.columns([1, 1.3], gap="large")
     
-    with col_input:
-        st.markdown("##### 1. Query Details")
+    with col_search_left:
+        st.markdown("#### Search Details")
+        uploaded_photo = st.file_uploader("Upload a photo of your lost item", type=["jpg", "jpeg", "png", "webp"])
         
-        query_image = st.file_uploader("Upload Lost Item Photo", type=["jpg", "jpeg", "png", "webp"])
-        
-        # Sample quick pick
-        sample_choice = st.selectbox(
-            "Or select a test reference item from the campus dataset:",
-            ["None", "Water Bottle (b2.jpg)", "Leather Wallet (wallet_test.jpg)", "Wristwatch (watchhh.jpg)", "Backpack (backpag.jpg)"]
+        # Test reference samples from authentic dataset
+        sample_pick = st.selectbox(
+            "Or try searching with a real item photo from the repository:",
+            [
+                "None (Upload my own photo)",
+                "Black Leather Wallet (data/test_images/wallet_test.jpg)",
+                "Water Bottle (data/test_images/b2.jpg)",
+                "Wristwatch (data/test_images/watchhh.jpg)",
+                "Backpack (data/test_images/backpag.jpg)"
+            ]
         )
         
-        sample_path = None
-        if sample_choice == "Water Bottle (b2.jpg)":
-            sample_path = "data/test_images/b2.jpg"
-        elif sample_choice == "Leather Wallet (wallet_test.jpg)":
-            sample_path = "data/test_images/wallet_test.jpg"
-        elif sample_choice == "Wristwatch (watchhh.jpg)":
-            sample_path = "data/test_images/watchhh.jpg"
-        elif sample_choice == "Backpack (backpag.jpg)":
-            sample_path = "data/test_images/backpag.jpg"
+        sample_file_path = None
+        if "wallet_test.jpg" in sample_pick:
+            sample_file_path = "data/test_images/wallet_test.jpg"
+        elif "b2.jpg" in sample_pick:
+            sample_file_path = "data/test_images/b2.jpg"
+        elif "watchhh.jpg" in sample_pick:
+            sample_file_path = "data/test_images/watchhh.jpg"
+        elif "backpag.jpg" in sample_pick:
+            sample_file_path = "data/test_images/backpag.jpg"
             
-        if sample_path and os.path.exists(sample_path) and not query_image:
-            st.image(sample_path, caption=f"Selected Sample: {sample_choice}", use_container_width=True)
+        if sample_file_path and os.path.exists(sample_file_path) and not uploaded_photo:
+            st.image(sample_file_path, caption="Selected sample photograph for search", use_container_width=True)
             
-        description = st.text_input("Item Description / Hallmarks", placeholder="e.g. Black Herschel backpack with red striped lining")
+        item_text = st.text_input("Keywords / Item Description", placeholder="e.g. Black Herschel backpack with red inner lining")
         
-        c_cat, c_loc = st.columns(2)
-        with c_cat:
-            category = st.selectbox("Category Filter", ["all", "backpack", "bottle", "phone", "wallet", "watch", "other"])
-        with c_loc:
-            location = st.selectbox("Location Filter", ["all", "Library", "Cafeteria", "Engineering", "Science", "Sports", "Transit"])
+        c_filter1, c_filter2 = st.columns(2)
+        with c_filter1:
+            category_choice = st.selectbox("Category", [
+                "all", "backpack", "phone", "laptop", "audio", "wallet", "watch", "bottle", "keys", "other"
+            ])
+        with c_filter2:
+            location_choice = st.selectbox("Location Last Seen", [
+                "all", "Library", "Cafeteria", "Engineering", "Science", "Sports", "Auditorium", "Transit"
+            ])
             
-        min_threshold = st.slider("Minimum Confidence Threshold", min_value=30, max_value=80, value=45, step=5)
+        sensitivity = st.slider("Similarity Threshold", min_value=30, max_value=85, value=45, step=5, help="Lower value shows broader possibilities; higher value shows only close matches.")
         
-        btn_match = st.button("🔎 Run Multimodal Search", use_container_width=True)
+        search_clicked = st.button("Search Found Property", use_container_width=True)
 
-    with col_results:
-        st.markdown("##### 2. Ranked Custody Matches")
+    with col_search_right:
+        st.markdown("#### Potential Matches in Custody")
         
-        if btn_match:
-            img_to_search = None
-            if query_image:
-                img_to_search = Image.open(query_image)
-            elif sample_path and os.path.exists(sample_path):
-                img_to_search = Image.open(sample_path)
+        if search_clicked:
+            query_img = None
+            if uploaded_photo:
+                query_img = Image.open(uploaded_photo)
+            elif sample_file_path and os.path.exists(sample_file_path):
+                query_img = Image.open(sample_file_path)
                 
-            if not img_to_search and not description.strip():
-                st.warning("Please upload an image, select a sample, or provide a description to begin searching.")
+            if not query_img and not item_text.strip():
+                st.warning("Please upload a photograph or enter a description to search.")
             else:
-                with st.spinner("Analyzing visual embeddings and searching custody vaults..."):
+                with st.spinner("Checking items currently held in custody lockers..."):
                     candidates = db.get_all_found_items()
                     matches = ai_engine.search_matches(
                         candidate_items=candidates,
-                        query_image=img_to_search,
-                        query_text=description,
-                        selected_category=category,
-                        selected_location=location,
-                        min_confidence=float(min_threshold),
-                        top_k=5
+                        query_image=query_img,
+                        query_text=item_text,
+                        selected_category=category_choice,
+                        selected_location=location_choice,
+                        min_confidence=float(sensitivity),
+                        top_k=6
                     )
                     
                 if not matches:
-                    st.info("No items in custody met the selected confidence threshold. Try lowering the threshold or file a Lost Inquiry in Tab 4.")
+                    st.info("No items in our current inventory match these criteria. Please register a missing report in Tab 4, and we will contact you immediately if it is handed in.")
                 else:
-                    st.success(f"Discovered {len(matches)} matching candidate(s) in custody:")
+                    st.success(f"Found {len(matches)} potential match(es) held in custody:")
                     for m in matches:
                         it = m["item"]
                         score = m["confidence"]
-                        badge_style = "score-high" if score >= 80 else ("score-medium" if score >= 65 else "score-low")
+                        badge_class = "badge-high-match" if score >= 80 else "badge-match"
                         
-                        with st.container():
-                            st.markdown(f"""
-                            <div class="item-card">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                    <h4 style="margin:0; font-size:1.1rem; color:#0F172A;">{it.get('title')}</h4>
-                                    <span class="score-badge {badge_style}">{score}% Match</span>
+                        st.markdown(f"""
+                        <div class="item-card">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                                <div>
+                                    <div class="card-title">{it.get('title')}</div>
+                                    <span class="badge-custody">Ref: {it.get('id')}</span>
                                 </div>
-                                <p style="font-size:0.85rem; color:#475569; margin:4px 0;">📍 <strong>Location:</strong> {it.get('location')} • 🔒 <strong>Custody:</strong> {it.get('custody_location')}</p>
-                                <p style="font-size:0.8rem; color:#2563EB; margin:4px 0;"><strong>Matched via:</strong> {', '.join(m.get('reasons', []))}</p>
+                                <span class="{badge_class}">{score}% Visual Match</span>
                             </div>
-                            """, unsafe_allow_html=True)
-                            
-                            c_img, c_claim = st.columns([1, 1.5])
-                            with c_img:
-                                if it.get("image_path") and os.path.exists(it["image_path"]):
-                                    st.image(it["image_path"], use_container_width=True)
-                            with c_claim:
-                                st.caption(f"Verification Prompt: {it.get('verification_prompt', 'Describe unique marks.')}")
-                                with st.expander(f"Claim Item #{it.get('id')}"):
-                                    c_name = st.text_input("Your Full Name", key=f"cn_{it.get('id')}")
-                                    c_phone = st.text_input("Phone Number", key=f"cp_{it.get('id')}")
-                                    c_proof = st.text_area("Identifying Proof (Secret Answer)", key=f"cpr_{it.get('id')}", placeholder="Describe scratch, wallpaper, contents...")
-                                    if st.button("Submit Ownership Claim", key=f"btn_c_{it.get('id')}"):
-                                        if c_name and c_phone and c_proof:
-                                            res = db.submit_claim({
-                                                "item_id": it.get("id"),
-                                                "claimant_name": c_name,
-                                                "claimant_phone": c_phone,
-                                                "claimant_email": "",
-                                                "identifying_details": c_proof
-                                            })
-                                            st.success(f"Claim filed successfully! Reference: {res.get('claim_id')}. Please report to {it.get('custody_location')}.")
-                                        else:
-                                            st.error("Please fill all claim fields.")
+                            <div class="card-detail">📍 <strong>Found At:</strong> {it.get('location')}</div>
+                            <div class="card-detail">📅 <strong>Handed In:</strong> {it.get('date_found')} • 🔒 <strong>Held At:</strong> {it.get('custody_location')}</div>
+                            <div class="card-detail" style="color:#1E40AF; margin-top:6px;"><strong>Match Reasons:</strong> {', '.join(m.get('reasons', []))}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        c_card_img, c_card_action = st.columns([1, 1.6])
+                        with c_card_img:
+                            if it.get("image_path") and os.path.exists(it["image_path"]):
+                                st.image(it["image_path"], use_container_width=True)
+                        with c_card_action:
+                            st.write(f"**Verification Question:** {it.get('verification_prompt', 'Describe unique marks or contents.')}")
+                            with st.expander(f"Arrange Collection for #{it.get('id')}"):
+                                cl_name = st.text_input("Your Full Name", key=f"n_{it.get('id')}")
+                                cl_phone = st.text_input("Phone Number", key=f"p_{it.get('id')}")
+                                cl_proof = st.text_area("Your Proof / Identifying Details", key=f"pr_{it.get('id')}", placeholder="Describe private details (lockscreen, scratches, inner pocket items, stickers)...")
+                                if st.button("Submit Claim for Verification", key=f"b_{it.get('id')}"):
+                                    if cl_name and cl_phone and cl_proof:
+                                        res = db.submit_claim({
+                                            "item_id": it.get("id"),
+                                            "claimant_name": cl_name,
+                                            "claimant_phone": cl_phone,
+                                            "claimant_email": "",
+                                            "identifying_details": cl_proof
+                                        })
+                                        st.success(f"Claim submitted successfully (Ref: {res.get('claim_id')}). Please present photo ID at {it.get('custody_location')} to collect.")
+                                    else:
+                                        st.error("Please provide your name, phone number, and proof.")
+                        st.write("---")
         else:
-            st.info("Upload an image or pick a test item on the left and click 'Run Multimodal Search' to view matched items.")
-
+            st.info("Select a sample item or upload a photograph on the left to begin searching.")
 
 # ============================================================
-# TAB 2: CUSTODY VAULT CATALOG
+# TAB 2: CATALOG OF HANDED-IN ITEMS
 # ============================================================
 with tab_catalog:
-    st.subheader("Items Currently in Safe Custody")
-    st.caption("All items logged by security personnel and campus staff awaiting verified owner reclamation.")
+    st.markdown("#### Current Property in Safe Custody")
+    st.caption("Browse all physical items deposited at campus security desks awaiting collection.")
     
-    col_f1, col_f2 = st.columns([1, 2])
-    with col_f1:
-        cat_filter = st.selectbox("Category Filter", ["all", "backpack", "bottle", "phone", "wallet", "watch", "other"], key="cat_catalog")
-    with col_f2:
-        search_filter = st.text_input("Search catalog by keyword or brand...", placeholder="e.g. Apple, Hydro Flask, Herschel, Casio...")
+    col_filter_a, col_filter_b = st.columns([1, 2])
+    with col_filter_a:
+        filter_cat = st.selectbox("Filter by Category", [
+            "all", "backpack", "phone", "laptop", "audio", "wallet", "watch", "bottle", "keys", "other"
+        ], key="cat_browser")
+    with col_filter_b:
+        filter_search = st.text_input("Search catalog by keyword or brand...", placeholder="e.g. Apple, Dell, Hydro Flask, Herschel, Casio...", key="search_browser")
         
-    items = db.get_all_found_items(category=cat_filter)
-    if search_filter:
-        q = search_filter.lower().strip()
-        items = [it for it in items if q in it.get("title", "").lower() or q in it.get("location", "").lower() or q in it.get("brand", "").lower()]
+    catalog_items = db.get_all_found_items(category=filter_cat)
+    if filter_search:
+        term = filter_search.lower().strip()
+        catalog_items = [
+            it for it in catalog_items
+            if term in it.get("title", "").lower()
+            or term in it.get("location", "").lower()
+            or term in it.get("brand", "").lower()
+            or term in it.get("color", "").lower()
+        ]
         
-    st.write(f"Displaying **{len(items)}** items:")
+    st.write(f"Showing **{len(catalog_items)}** items in custody:")
     
-    # Render in 3-column grid
-    cols = st.columns(3)
-    for idx, it in enumerate(items):
-        with cols[idx % 3]:
+    grid_cols = st.columns(3)
+    for idx, item in enumerate(catalog_items):
+        with grid_cols[idx % 3]:
             st.markdown(f"""
             <div class="item-card">
-                <span class="score-badge {'score-high' if it.get('status') == 'Available' else 'score-medium'}" style="margin-bottom:8px;">{it.get('status')}</span>
-                <h4 style="margin:4px 0; font-size:1rem;">{it.get('title')}</h4>
-                <p style="font-size:0.8rem; color:#64748B;">📍 {it.get('location')}</p>
-                <p style="font-size:0.75rem; color:#94A3B8;">📅 Found: {it.get('date_found')} • 🔒 {it.get('custody_location')}</p>
+                <span class="badge-custody">{item.get('status')}</span>
+                <div class="card-title" style="margin-top:8px;">{item.get('title')}</div>
+                <div class="card-detail">📍 {item.get('location')}</div>
+                <div class="card-detail">🔒 {item.get('custody_location')}</div>
+                <div class="card-detail" style="color:#6B7280; font-size:0.75rem;">Handed in: {item.get('date_found')}</div>
             </div>
             """, unsafe_allow_html=True)
-            if it.get("image_path") and os.path.exists(it["image_path"]):
-                st.image(it["image_path"], use_container_width=True)
-            st.divider()
-
+            if item.get("image_path") and os.path.exists(item["image_path"]):
+                st.image(item["image_path"], use_container_width=True)
+            st.write("")
 
 # ============================================================
-# TAB 3: REGISTER FOUND ITEM (INTAKE)
+# TAB 3: REPORT AN ITEM YOU FOUND
 # ============================================================
-with tab_found:
-    st.subheader("Custody Intake Registration")
-    st.caption("Register an item turned into security or lost & found dispatch. Generates multimodal vectors and alerts matching lost inquiries.")
+with tab_report_found:
+    st.markdown("#### Register a Found Belonging")
+    st.caption("Please deposit the physical item at the nearest campus reception or security post after logging it.")
     
-    with st.form("form_intake"):
-        f_title = st.text_input("Item Title *", placeholder="e.g. Apple Watch Series 8 (Midnight)")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            f_cat = st.selectbox("Category *", ["backpack", "bottle", "phone", "wallet", "watch", "other"])
-        with c2:
-            f_brand = st.text_input("Brand", placeholder="e.g. Apple")
-        with c3:
-            f_color = st.text_input("Color", placeholder="e.g. Midnight Black")
-            
-        c4, c5 = st.columns(2)
-        with c4:
-            f_loc = st.text_input("Location Found *", placeholder="e.g. Central Library - 2nd Floor")
-        with c5:
-            f_locker = st.text_input("Custody Locker / Desk *", value="Locker A-04, Main Security Office")
-            
-        f_prompt = st.text_input("Anti-Theft Verification Prompt *", value="Describe any unique scratch, marks, or packaging details.")
-        f_img = st.file_uploader("Item Photograph *", type=["jpg", "jpeg", "png"])
+    with st.form("form_register_found"):
+        title_in = st.text_input("Item Name / Title *", placeholder="e.g. Apple Watch Series 8 (Midnight)")
         
-        submitted = st.form_submit_button("Register Item into Custody")
+        row1_a, row1_b, row1_c = st.columns(3)
+        with row1_a:
+            cat_in = st.selectbox("Category *", ["backpack", "phone", "laptop", "audio", "wallet", "watch", "bottle", "keys", "other"])
+        with row1_b:
+            brand_in = st.text_input("Brand", placeholder="e.g. Apple, Hydro Flask")
+        with row1_c:
+            color_in = st.text_input("Primary Color", placeholder="e.g. Black, Silver")
+            
+        row2_a, row2_b = st.columns(2)
+        with row2_a:
+            loc_in = st.text_input("Exact Location Where Found *", placeholder="e.g. Central Library, 2nd Floor Study Room 204")
+        with row2_b:
+            locker_in = st.text_input("Physical Custody Location *", value="Main Security Office, Safe Box A")
+            
+        prompt_in = st.text_input("Ownership Verification Prompt *", value="Describe any unique scratch, marks, or packaging details.")
+        photo_in = st.file_uploader("Item Photograph *", type=["jpg", "jpeg", "png"])
         
-        if submitted:
-            if f_title and f_loc and f_img:
-                img_bytes = f_img.read()
-                ext = os.path.splitext(f_img.name)[1] or ".jpg"
-                fn = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}{ext}"
+        submit_found = st.form_submit_button("Register Found Item")
+        
+        if submit_found:
+            if title_in and loc_in and photo_in:
+                img_data = photo_in.read()
+                ext = os.path.splitext(photo_in.name)[1] or ".jpg"
+                unique_fn = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}{ext}"
                 save_dir = os.path.join("data", "registered_items")
                 os.makedirs(save_dir, exist_ok=True)
-                full_path = os.path.join(save_dir, fn)
-                with open(full_path, "wb") as f:
-                    f.write(img_bytes)
-                    
-                emb = ai_engine.extract_image_embedding(img_bytes)
+                target_path = os.path.join(save_dir, unique_fn)
                 
-                new_item = {
-                    "title": f_title,
-                    "description": f"{f_title}. Brand: {f_brand}. Color: {f_color}. Found at {f_loc}.",
-                    "category": f_cat,
-                    "brand": f_brand,
-                    "color": f_color,
-                    "location": f_loc,
+                with open(target_path, "wb") as f:
+                    f.write(img_data)
+                    
+                emb = ai_engine.extract_image_embedding(img_data)
+                
+                new_record = {
+                    "title": title_in,
+                    "description": f"{title_in}. Brand: {brand_in}. Color: {color_in}. Found at {loc_in}.",
+                    "category": cat_in,
+                    "brand": brand_in,
+                    "color": color_in,
+                    "location": loc_in,
                     "date_found": datetime.now().strftime("%Y-%m-%d"),
-                    "filename": fn,
-                    "image_path": full_path.replace("\\", "/"),
+                    "filename": unique_fn,
+                    "image_path": target_path.replace("\\", "/"),
                     "status": "Available",
-                    "custody_location": f_locker,
-                    "verification_prompt": f_prompt,
+                    "custody_location": locker_in,
+                    "verification_prompt": prompt_in,
                     "embedding": emb.tolist()
                 }
-                added = db.add_found_item(new_item)
-                st.success(f"Item logged into custody! Custody ID: {added.get('id')}.")
+                added_item = db.add_found_item(new_record)
+                st.success(f"Item logged into custody catalog with Reference #{added_item.get('id')}.")
             else:
-                st.error("Please provide title, location, and a photograph.")
-
+                st.error("Please provide the item title, location, and a photograph.")
 
 # ============================================================
-# TAB 4: FILE LOST INQUIRY
+# TAB 4: REGISTER A MISSING ITEM
 # ============================================================
-with tab_lost:
-    st.subheader("Submit Lost Valuable Inquiry")
-    st.caption("Can't find your item in the catalog? File a report and our continuous matcher will alert you as soon as matching items are registered.")
+with tab_report_lost:
+    st.markdown("#### Submit a Missing Property Report")
+    st.caption("If your item is not currently listed in our catalog, file this report. Our system monitors all new hand-ins and alerts you upon a match.")
     
-    with st.form("form_lost_inquiry"):
-        l_name = st.text_input("What did you lose? *", placeholder="e.g. Grey Herschel Travel Laptop Backpack")
-        l_cat = st.selectbox("Category *", ["backpack", "bottle", "phone", "wallet", "watch", "other"])
-        l_desc = st.text_area("Detailed Description *", placeholder="Describe brand, markings, stickers, unique features...")
-        l_loc = st.text_input("Last Seen Location *", placeholder="e.g. Cafeteria Table 14")
+    with st.form("form_register_lost"):
+        lost_title = st.text_input("What item did you lose? *", placeholder="e.g. Navy Blue JanSport Backpack")
+        lost_category = st.selectbox("Category *", ["backpack", "phone", "laptop", "audio", "wallet", "watch", "bottle", "keys", "other"])
+        lost_desc = st.text_area("Detailed Description *", placeholder="Include any stickers, scratches, contents inside, or personal markings...")
+        lost_loc = st.text_input("Location Last Seen *", placeholder="e.g. Cafeteria Table 14 or North Bus Bay")
         
-        c_n, c_e, c_p = st.columns(3)
-        with c_n:
-            owner_name = st.text_input("Your Full Name *")
-        with c_e:
-            owner_email = st.text_input("Email Address *")
-        with c_p:
-            owner_phone = st.text_input("Phone Number *")
+        c_name, c_email, c_phone = st.columns(3)
+        with c_name:
+            contact_name = st.text_input("Your Full Name *")
+        with c_email:
+            contact_email = st.text_input("Email Address *")
+        with c_phone:
+            contact_phone = st.text_input("Contact Phone Number *")
             
-        lost_sub = st.form_submit_button("Submit Lost Report")
-        if lost_sub:
-            if l_name and l_desc and owner_name and (owner_email or owner_phone):
+        submit_lost = st.form_submit_button("Submit Missing Report")
+        if submit_lost:
+            if lost_title and lost_desc and contact_name and (contact_email or contact_phone):
                 rep = db.add_lost_report({
-                    "item_name": l_name,
-                    "category": l_cat,
-                    "description": l_desc,
-                    "location_lost": l_loc,
+                    "item_name": lost_title,
+                    "category": lost_category,
+                    "description": lost_desc,
+                    "location_lost": lost_loc,
                     "date_lost": datetime.now().strftime("%Y-%m-%d"),
-                    "contact_name": owner_name,
-                    "contact_email": owner_email,
-                    "contact_phone": owner_phone
+                    "contact_name": contact_name,
+                    "contact_email": contact_email,
+                    "contact_phone": contact_phone
                 })
-                st.success(f"Lost report registered! Tracking ID: {rep.get('id')}. You will be alerted upon a positive match.")
+                st.success(f"Missing report registered! Reference ID: {rep.get('id')}. You will be contacted automatically upon an intake match.")
             else:
                 st.error("Please fill all required fields.")
 
-
 # ============================================================
-# TAB 5: CLAIMS VERIFICATION DESK
+# TAB 5: VERIFICATION & COLLECTION DESK
 # ============================================================
-with tab_claims:
-    st.subheader("Custody Handover & Verification Desk")
-    st.caption("Authorized campus security staff review claimant proofs and approve physical handovers.")
+with tab_desk:
+    st.markdown("#### Claims Verification & Physical Handover Desk")
+    st.caption("Authorized security officers review ownership proofs and authorize physical collection.")
     
-    claims = db.get_all_claims()
-    if not claims:
-        st.info("No active ownership claims currently pending review.")
+    claims_list = db.get_all_claims()
+    if not claims_list:
+        st.info("There are currently no claims pending verification.")
     else:
-        for c in claims:
-            target_item = db.get_item_by_id(c.get("item_id", ""))
-            with st.container():
-                st.markdown(f"""
-                <div class="item-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <strong>Claim #{c.get('claim_id')}</strong>
-                        <span class="score-badge {'score-high' if c.get('status') == 'Approved' else 'score-medium'}">{c.get('status')}</span>
-                    </div>
-                    <p style="margin:4px 0;"><strong>Target Item:</strong> {target_item.get('title', 'Unknown') if target_item else 'Unknown'} (ID: {c.get('item_id')})</p>
-                    <p style="margin:4px 0;"><strong>Claimant:</strong> {c.get('claimant_name')} • 📞 {c.get('claimant_phone')} • ✉️ {c.get('claimant_email')}</p>
-                    <p style="margin:4px 0; background:#F8FAFC; padding:8px; border-radius:6px;"><strong>Submitted Proof / Secret Answer:</strong> <em>"{c.get('identifying_details')}"</em></p>
+        for c in claims_list:
+            item_ref = db.get_item_by_id(c.get("item_id", ""))
+            st.markdown(f"""
+            <div class="item-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div><strong>Claim #{c.get('claim_id')}</strong></div>
+                    <span class="badge-custody">{c.get('status')}</span>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                if c.get("status") == "Pending Review":
-                    c_app, c_rej = st.columns([1, 1])
-                    with c_app:
-                        if st.button(f"Approve Handover", key=f"app_{c.get('claim_id')}"):
-                            db.resolve_claim(c.get("claim_id"), "Approved", notes="Verified by officer")
-                            st.success(f"Claim #{c.get('claim_id')} approved. Item marked as Reunited.")
-                            st.rerun()
-                    with c_rej:
-                        if st.button(f"Reject Claim", key=f"rej_{c.get('claim_id')}"):
-                            db.resolve_claim(c.get("claim_id"), "Rejected", notes="Proof did not match physical item")
-                            st.warning(f"Claim #{c.get('claim_id')} rejected.")
-                            st.rerun()
-                st.divider()
+                <div class="card-detail" style="margin-top:6px;"><strong>Target Item:</strong> {item_ref.get('title', 'Unknown Item') if item_ref else 'Unknown'} (Ref: {c.get('item_id')})</div>
+                <div class="card-detail"><strong>Claimant:</strong> {c.get('claimant_name')} • 📞 {c.get('claimant_phone')}</div>
+                <div class="card-detail" style="background:#F9FAFB; padding:10px; border-radius:4px; margin-top:8px;">
+                    <strong>Claimant Proof / Answer:</strong><br />
+                    <em>"{c.get('identifying_details')}"</em>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if c.get("status") == "Pending Review":
+                col_btn_app, col_btn_rej = st.columns(2)
+                with col_btn_app:
+                    if st.button("Approve & Hand Over", key=f"app_{c.get('claim_id')}"):
+                        db.resolve_claim(c.get("claim_id"), "Approved", notes="Verified by desk officer")
+                        st.success(f"Claim #{c.get('claim_id')} approved. Item marked as Reunited.")
+                        st.rerun()
+                with col_btn_rej:
+                    if st.button("Reject Claim", key=f"rej_{c.get('claim_id')}"):
+                        db.resolve_claim(c.get("claim_id"), "Rejected", notes="Proof did not match physical item")
+                        st.warning(f"Claim #{c.get('claim_id')} rejected.")
+                        st.rerun()
+            st.write("---")

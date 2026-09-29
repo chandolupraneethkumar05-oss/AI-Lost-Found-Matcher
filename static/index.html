@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FindSphere — Campus & Transit Lost & Found Recovery Network</title>
+  <title>Central Lost Property Office — Campus & Community Recovery Network</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -16,10 +16,10 @@
     <div class="container announcement-inner">
       <div class="announcement-left">
         <span class="status-dot"></span>
-        <span class="announcement-text">Official Central Custody & Recovery Dispatch — <strong>Live Service</strong></span>
+        <span>Central Campus & Public Transit Services — <strong>Lost Property Office Active</strong></span>
       </div>
       <div class="announcement-right">
-        <span>Campus Custody Desk: Block A, Room 102</span>
+        <span>Main Dispatch: Administration Building, Room 102</span>
         <span class="divider">•</span>
         <span>Helpline: +91 (0863) 2344-700</span>
       </div>
@@ -30,31 +30,24 @@
   <header class="site-header">
     <div class="container header-inner">
       <a href="#hero" class="brand-logo">
-        <div class="logo-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <path d="M11 8v6"></path>
-            <path d="M8 11h6"></path>
-          </svg>
-        </div>
+        <div class="logo-icon">🏛️</div>
         <div class="brand-text">
-          <span class="brand-title">FindSphere</span>
-          <span class="brand-subtitle">Recovery Network</span>
+          <span class="brand-title">Lost Property Office</span>
+          <span class="brand-subtitle">Campus & Transit Custody</span>
         </div>
       </a>
 
       <nav class="nav-menu">
-        <a href="#search-section" class="nav-link active">Search & Match</a>
-        <a href="#catalog-section" class="nav-link">Custody Catalog</a>
-        <a href="#report-found-section" class="nav-link">Report Found</a>
-        <a href="#report-lost-section" class="nav-link">File Lost Inquiry</a>
-        <a href="#claims-desk-section" class="nav-link">Verification Desk</a>
-        <a href="#how-it-works-section" class="nav-link">How It Works</a>
+        <a href="#search-section" class="nav-link active">Search Property</a>
+        <a href="#catalog-section" class="nav-link">Handed-In Catalog</a>
+        <a href="#report-found-section" class="nav-link">Hand in an Item</a>
+        <a href="#report-lost-section" class="nav-link">Report Missing</a>
+        <a href="#claims-desk-section" class="nav-link">Collection Desk</a>
+        <a href="#how-it-works-section" class="nav-link">Collection Policy</a>
       </nav>
 
       <div class="header-actions">
-        <a href="#search-section" class="btn btn-primary">Find My Item</a>
+        <a href="#search-section" class="btn btn-primary">Search by Photo</a>
       </div>
     </div>
   </header>
@@ -62,49 +55,38 @@
   <!-- Hero Section -->
   <section id="hero" class="hero-section">
     <div class="container hero-inner">
-      <div class="hero-content">
-        <div class="trust-badge">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          </svg>
-          <span>Verified University & Transit Custody Protocol</span>
-        </div>
-        <h1 class="hero-title">
-          Recover your lost belongings with <span class="highlight-text">intelligent visual matching</span>.
-        </h1>
-        <p class="hero-subtitle">
-          Our centralized custody network compares item photographs, brand details, and physical hallmarks against registered intake in real time. Fast, confidential, and verified.
-        </p>
+      <div class="trust-badge">
+        <span>Official Campus Security & Custody Protocol</span>
+      </div>
+      <h1 class="hero-title">
+        Recover your misplaced belongings with <span class="highlight-text">direct visual matching</span>.
+      </h1>
+      <p class="hero-subtitle">
+        Misplaced a bag, smartphone, wallet, or keys? Our central repository logs every handed-in belonging with photography, brand specifications, and safe locker custody.
+      </p>
 
-        <div class="hero-cta-group">
-          <a href="#search-section" class="btn btn-primary btn-lg">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            Upload Photo to Match
-          </a>
-          <a href="#catalog-section" class="btn btn-outline btn-lg">Browse Custody Items</a>
-        </div>
+      <div class="hero-cta-group">
+        <a href="#search-section" class="btn btn-primary btn-lg">Search by Photograph or Details</a>
+        <a href="#catalog-section" class="btn btn-outline btn-lg">Browse Recent Hand-Ins</a>
+      </div>
 
-        <!-- Live Statistics Counter -->
-        <div class="hero-stats-grid">
-          <div class="stat-card">
-            <div class="stat-number" id="stat-rate">94.8%</div>
-            <div class="stat-label">Verified Reconnection Rate</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-time">15 min</div>
-            <div class="stat-label">Avg. Match Resolution</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-items">28+</div>
-            <div class="stat-label">Items in Custody Vaults</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number" id="stat-zones">6 Zones</div>
-            <div class="stat-label">Active Campus Desks</div>
-          </div>
+      <!-- Live Statistics Counter -->
+      <div class="hero-stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-items">49</div>
+          <div class="stat-label">Items in Safe Custody</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-rate">94.8%</div>
+          <div class="stat-label">Verified Return Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-time">3.5 hrs</div>
+          <div class="stat-label">Average Claim Time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-zones">6 Hubs</div>
+          <div class="stat-label">Campus Custody Desks</div>
         </div>
       </div>
     </div>
@@ -114,10 +96,10 @@
   <section id="search-section" class="section search-section">
     <div class="container">
       <div class="section-header text-center">
-        <span class="section-tag">Visual Match Studio</span>
-        <h2 class="section-title">Upload a photo to locate matching items</h2>
+        <span class="section-tag">Search Inventory</span>
+        <h2 class="section-title">Check if Your Belonging Has Been Handed In</h2>
         <p class="section-description">
-          Take or upload a picture of what you lost. Our multimodal vision engine analyzes shape, color, brand hallmarks, and location to find exact candidates.
+          Provide a photograph or describe the physical characteristics of your item. We will compare it against current items in campus custody lockers.
         </p>
       </div>
 
@@ -137,9 +119,9 @@
                 </svg>
               </div>
               <div class="dropzone-text">
-                <strong>Click to upload</strong> or drag and drop an item photo
+                <strong>Click to select a photo</strong> or drag and drop here
               </div>
-              <div class="dropzone-hint">Supports JPG, PNG, WEBP up to 10MB</div>
+              <div class="dropzone-hint">Clear photos of the front or back work best</div>
             </div>
 
             <div class="dropzone-preview hidden" id="dropzone-preview">
@@ -148,20 +130,20 @@
             </div>
           </div>
 
-          <!-- Quick Test Samples -->
+          <!-- Quick Test Samples with Real Photographs -->
           <div class="sample-selector">
-            <span class="sample-label">Or test with a sample:</span>
+            <span class="sample-label">Or test with real catalog samples:</span>
             <div class="sample-chips">
-              <button type="button" class="sample-chip" data-sample="data/test_images/b2.jpg">Water Bottle</button>
-              <button type="button" class="sample-chip" data-sample="data/test_images/wallet_test.jpg">Leather Wallet</button>
-              <button type="button" class="sample-chip" data-sample="data/test_images/watchhh.jpg">Wristwatch</button>
-              <button type="button" class="sample-chip" data-sample="data/test_images/backpag.jpg">Backpack</button>
+              <button type="button" class="sample-chip" data-sample="data/real_items/iphone_14_black.jpg">Black iPhone 14</button>
+              <button type="button" class="sample-chip" data-sample="data/real_items/bellroy_leather_wallet.jpg">Leather Wallet</button>
+              <button type="button" class="sample-chip" data-sample="data/real_items/hydroflask_black_32.jpg">Hydro Flask Bottle</button>
+              <button type="button" class="sample-chip" data-sample="data/real_items/herschel_classic_black.jpg">Herschel Backpack</button>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="match-description" class="form-label">Item Description & Key Characteristics</label>
-            <input type="text" id="match-description" class="form-control" placeholder="e.g. Black Herschel backpack with red striped lining" />
+            <label for="match-description" class="form-label">Keywords & Distinctive Features</label>
+            <input type="text" id="match-description" class="form-control" placeholder="e.g. Matte black iPhone with clear case or navy Herschel bag" />
           </div>
 
           <div class="form-row">
@@ -170,23 +152,27 @@
               <select id="match-category" class="form-control">
                 <option value="all">All Categories</option>
                 <option value="backpack">Backpacks & Bags</option>
-                <option value="bottle">Bottles & Thermoses</option>
-                <option value="phone">Phones & Electronics</option>
-                <option value="wallet">Wallets & Purses</option>
+                <option value="phone">Phones & Tablets</option>
+                <option value="laptop">Laptops & Computers</option>
+                <option value="audio">Audio & Earbuds</option>
+                <option value="wallet">Wallets & Cards</option>
                 <option value="watch">Watches & Wearables</option>
-                <option value="other">Other Accessories</option>
+                <option value="bottle">Water Bottles & Flasks</option>
+                <option value="keys">Keys & Fobs</option>
+                <option value="other">Other Items</option>
               </select>
             </div>
 
             <div class="form-group col-6">
-              <label for="match-location" class="form-label">Last Seen Location</label>
+              <label for="match-location" class="form-label">Location Last Seen</label>
               <select id="match-location" class="form-control">
                 <option value="all">Any Campus Location</option>
                 <option value="Library">Central Library</option>
-                <option value="Cafeteria">Central Cafeteria</option>
-                <option value="Engineering">Engineering Block</option>
+                <option value="Cafeteria">Student Cafeteria</option>
+                <option value="Engineering">Engineering Workshops</option>
                 <option value="Science">Science Complex</option>
-                <option value="Sports">Sports Arena / Gym</option>
+                <option value="Sports">Sports Arena & Gym</option>
+                <option value="Auditorium">Main Auditorium</option>
                 <option value="Transit">Campus Transit Hub</option>
               </select>
             </div>
@@ -194,17 +180,14 @@
 
           <div class="form-group">
             <div class="slider-header">
-              <label for="match-threshold" class="form-label">Minimum Match Confidence</label>
+              <label for="match-threshold" class="form-label">Minimum Match Sensitivity</label>
               <span class="slider-val" id="threshold-val">45%</span>
             </div>
             <input type="range" id="match-threshold" min="30" max="80" value="45" class="form-range" />
           </div>
 
           <button type="button" class="btn btn-primary btn-block btn-lg" id="btn-run-match">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            Execute Multimodal Search
+            Search Custody Inventory
           </button>
         </div>
 
@@ -212,14 +195,14 @@
         <div class="workbench-results-card">
           <div class="results-header">
             <div>
-              <h3 class="card-heading" id="results-title">Matched Candidates in Custody</h3>
-              <p class="results-subtitle" id="results-count">Upload an image or enter details to view ranked results.</p>
+              <h3 class="card-heading" id="results-title">Items Currently in Custody</h3>
+              <p class="results-subtitle" id="results-count">Select a photo or sample above to view matching property held in lockers.</p>
             </div>
           </div>
 
           <div id="results-loader" class="results-loader hidden">
             <div class="spinner"></div>
-            <p>Analyzing visual features with CLIP vision encoder...</p>
+            <p>Comparing photograph against current custody inventory...</p>
           </div>
 
           <div id="results-container" class="results-grid">
@@ -229,8 +212,8 @@
                   <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </div>
-              <h4>No Search Performed Yet</h4>
-              <p>Select a sample above or drop an image to search all registered custody items.</p>
+              <h4>No Search Carried Out Yet</h4>
+              <p>Choose one of the sample items or upload your own photo to search all current hand-ins.</p>
             </div>
           </div>
         </div>
@@ -243,9 +226,9 @@
     <div class="container">
       <div class="section-header-row">
         <div>
-          <span class="section-tag">Custody Vault Registry</span>
-          <h2 class="section-title">Registered Items Currently in Safe Custody</h2>
-          <p class="section-description">All items are logged and preserved in campus security lockers pending owner verification.</p>
+          <span class="section-tag">Property Inventory</span>
+          <h2 class="section-title">Current Handed-In Property in Safe Custody</h2>
+          <p class="section-description">All items are secured in locked security lockers awaiting verified claimant collection.</p>
         </div>
         <div class="catalog-filters">
           <input type="text" id="catalog-search" class="form-control" placeholder="Search by brand, color, or keyword..." />
@@ -255,12 +238,15 @@
       <!-- Category Filter Pills -->
       <div class="category-pills" id="category-pills">
         <button class="pill active" data-cat="all">All Items</button>
-        <button class="pill" data-cat="backpack">Backpacks</button>
+        <button class="pill" data-cat="backpack">Bags & Backpacks</button>
         <button class="pill" data-cat="phone">Phones & Electronics</button>
-        <button class="pill" data-cat="wallet">Wallets & IDs</button>
+        <button class="pill" data-cat="laptop">Laptops</button>
+        <button class="pill" data-cat="audio">Audio & Earbuds</button>
+        <button class="pill" data-cat="wallet">Wallets & Cards</button>
         <button class="pill" data-cat="watch">Watches</button>
-        <button class="pill" data-cat="bottle">Bottles</button>
-        <button class="pill" data-cat="other">Other</button>
+        <button class="pill" data-cat="bottle">Bottles & Flasks</button>
+        <button class="pill" data-cat="keys">Keys</button>
+        <button class="pill" data-cat="other">Other Items</button>
       </div>
 
       <div class="catalog-grid" id="catalog-items-grid">
@@ -269,14 +255,14 @@
     </div>
   </section>
 
-  <!-- Dual Action: Report Found & Report Lost -->
+  <!-- Report Found Item -->
   <section id="report-found-section" class="section report-section">
     <div class="container">
       <div class="section-header text-center">
-        <span class="section-tag">Intake Desk</span>
-        <h2 class="section-title">Report a Found Valuable</h2>
+        <span class="section-tag">Hand In Property</span>
+        <h2 class="section-title">Found an Item? Hand It in Safely</h2>
         <p class="section-description">
-          Help return an item to its rightful owner. When you register a found item, our system automatically scans open lost inquiries and alerts verified owners.
+          Help return an item to its owner. When you register a found item, our system automatically scans open missing reports and alerts verified owners.
         </p>
       </div>
 
@@ -284,18 +270,21 @@
         <form id="form-report-found" class="report-form">
           <div class="form-row">
             <div class="form-group col-6">
-              <label class="form-label" for="found-title">Item Title *</label>
+              <label class="form-label" for="found-title">Item Name / Title *</label>
               <input type="text" id="found-title" class="form-control" required placeholder="e.g. Apple AirPods Pro (2nd Gen)" />
             </div>
             <div class="form-group col-6">
               <label class="form-label" for="found-category">Category *</label>
               <select id="found-category" class="form-control" required>
                 <option value="backpack">Backpack / Bag</option>
-                <option value="phone">Phone / Tablet / Electronics</option>
+                <option value="phone">Phone / Tablet</option>
+                <option value="laptop">Laptop / Computer</option>
+                <option value="audio">Earbuds / Headphones</option>
                 <option value="wallet">Wallet / Cards / ID</option>
                 <option value="watch">Watch / Wearable</option>
                 <option value="bottle">Water Bottle / Flask</option>
-                <option value="other">Other Accessory</option>
+                <option value="keys">Keys / Access Fob</option>
+                <option value="other">Other Belonging</option>
               </select>
             </div>
           </div>
@@ -310,15 +299,15 @@
               <input type="text" id="found-color" class="form-control" placeholder="e.g. Space Black, Navy" />
             </div>
             <div class="form-group col-4">
-              <label class="form-label" for="found-date">Date Found</label>
+              <label class="form-label" for="found-date">Date Handed In</label>
               <input type="date" id="found-date" class="form-control" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group col-6">
-              <label class="form-label" for="found-location">Specific Location Found *</label>
-              <input type="text" id="found-location" class="form-control" required placeholder="e.g. Central Library - 2nd Floor Quiet Study" />
+              <label class="form-label" for="found-location">Exact Location Found *</label>
+              <input type="text" id="found-location" class="form-control" required placeholder="e.g. Central Library - 2nd Floor Study Room 204" />
             </div>
             <div class="form-group col-6">
               <label class="form-label" for="found-custody">Custody Storage Locker *</label>
@@ -327,7 +316,7 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="found-question">Anti-Theft Ownership Verification Prompt *</label>
+            <label class="form-label" for="found-question">Ownership Verification Prompt *</label>
             <input type="text" id="found-question" class="form-control" value="Describe any unique scratches, stickers, or specific contents inside." required />
             <small class="form-hint">Claimants must answer this specific prompt before custody release is approved.</small>
           </div>
@@ -338,7 +327,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-found">
-            Register Item into Secure Custody
+            Register Item in Safe Custody
           </button>
         </form>
 
@@ -351,10 +340,10 @@
   <section id="report-lost-section" class="section report-section bg-alt">
     <div class="container">
       <div class="section-header text-center">
-        <span class="section-tag">Lost Item Registry</span>
-        <h2 class="section-title">Can't Find Your Item? File an Inquiry</h2>
+        <span class="section-tag">Missing Reports</span>
+        <h2 class="section-title">Can't Find Your Belonging? File an Inquiry</h2>
         <p class="section-description">
-          Register your lost valuable. Our continuous background listener compares all new incoming custody intakes and contacts you the moment a match is registered.
+          Register your lost valuable. Our central system continuously checks incoming hand-ins and contacts you the moment a matching item is handed in.
         </p>
       </div>
 
@@ -369,11 +358,14 @@
               <label class="form-label" for="lost-category">Category *</label>
               <select id="lost-category" class="form-control" required>
                 <option value="backpack">Backpack / Bag</option>
-                <option value="phone">Phone / Electronics</option>
+                <option value="phone">Phone / Tablet</option>
+                <option value="laptop">Laptop / Computer</option>
+                <option value="audio">Earbuds / Headphones</option>
                 <option value="wallet">Wallet / Cards</option>
                 <option value="watch">Watch / Wearable</option>
                 <option value="bottle">Water Bottle</option>
-                <option value="other">Other Items</option>
+                <option value="keys">Keys / Fob</option>
+                <option value="other">Other Belonging</option>
               </select>
             </div>
           </div>
@@ -404,13 +396,13 @@
               <input type="email" id="lost-contact-email" class="form-control" required placeholder="name@campus.edu" />
             </div>
             <div class="form-group col-4">
-              <label class="form-label" for="lost-contact-phone">Phone / WhatsApp *</label>
+              <label class="form-label" for="lost-contact-phone">Phone Number *</label>
               <input type="tel" id="lost-contact-phone" class="form-control" required placeholder="+91 98765 43210" />
             </div>
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-lost">
-            Submit Lost Report & Enable Auto-Alerts
+            Submit Missing Report
           </button>
         </form>
 
@@ -419,14 +411,14 @@
     </div>
   </section>
 
-  <!-- Claims Verification Desk (Admin & Custody Officer View) -->
+  <!-- Claims Verification Desk -->
   <section id="claims-desk-section" class="section claims-section">
     <div class="container">
       <div class="section-header-row">
         <div>
-          <span class="section-tag">Custody Operations</span>
-          <h2 class="section-title">Ownership Verification & Claims Desk</h2>
-          <p class="section-description">Authorized staff review ownership claims, cross-verify secret answers, and release custody.</p>
+          <span class="section-tag">Custody Desk</span>
+          <h2 class="section-title">Ownership Verification & Collection Desk</h2>
+          <p class="section-description">Duty security staff review claims, verify private answers, and log physical handovers.</p>
         </div>
         <div>
           <button type="button" class="btn btn-outline" id="btn-refresh-claims">Refresh Claims Queue</button>
@@ -438,12 +430,12 @@
           <table class="claims-table">
             <thead>
               <tr>
-                <th>Claim ID</th>
+                <th>Claim Ref</th>
                 <th>Target Item</th>
-                <th>Claimant Info</th>
-                <th>Secret Identifying Proof</th>
+                <th>Claimant Contact</th>
+                <th>Submitted Ownership Proof</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Desk Action</th>
               </tr>
             </thead>
             <tbody id="claims-tbody">
@@ -459,34 +451,34 @@
   <section id="how-it-works-section" class="section how-it-works bg-alt">
     <div class="container">
       <div class="section-header text-center">
-        <span class="section-tag">Recovery Standard</span>
-        <h2 class="section-title">How FindSphere Protects & Returns Valuables</h2>
-        <p class="section-description">A transparent, anti-theft workflow designed for campuses, transit hubs, and public venues.</p>
+        <span class="section-tag">Collection Protocol</span>
+        <h2 class="section-title">How Lost Property is Handled & Reclaimed</h2>
+        <p class="section-description">A secure four-step procedure ensuring every item reaches its rightful owner.</p>
       </div>
 
       <div class="steps-grid">
         <div class="step-card">
-          <div class="step-num">01</div>
-          <h4 class="step-title">Safe Physical Custody</h4>
-          <p class="step-text">Found items are logged with high-resolution photography and deposited into secure, numbered campus lockers.</p>
+          <div class="step-num">1</div>
+          <h4 class="step-title">Secure Intake</h4>
+          <p class="step-text">Items are logged with photographs, assigned a tracking reference, and locked in security locker vaults.</p>
         </div>
 
         <div class="step-card">
-          <div class="step-num">02</div>
-          <h4 class="step-title">Multimodal AI Matching</h4>
-          <p class="step-text">Our CLIP vision engine extracts 512-dimensional visual feature vectors, performing instant cross-similarity checks.</p>
+          <div class="step-num">2</div>
+          <h4 class="step-title">Visual Cross-Matching</h4>
+          <p class="step-text">Photographs are visually analyzed for color, silhouette, brand logos, and specific hallmarks.</p>
         </div>
 
         <div class="step-card">
-          <div class="step-num">03</div>
-          <h4 class="step-title">Anti-Theft Verification</h4>
-          <p class="step-text">Owners must prove ownership by answering non-public verification questions (serial digits, wallpapers, inner marks).</p>
+          <div class="step-num">3</div>
+          <h4 class="step-title">Proof of Ownership</h4>
+          <p class="step-text">Claimants answer non-public questions (such as serial numbers, scratches, or interior contents) before release.</p>
         </div>
 
         <div class="step-card">
-          <div class="step-num">04</div>
+          <div class="step-num">4</div>
           <h4 class="step-title">Verified Handover</h4>
-          <p class="step-text">Upon approval, a one-time Handover Code is generated for secure in-person collection at the security dispatch desk.</p>
+          <p class="step-text">Owners present photo identification at the campus security desk to complete physical handover.</p>
         </div>
       </div>
     </div>
@@ -497,28 +489,21 @@
     <div class="container footer-inner">
       <div class="footer-col brand-col">
         <div class="brand-logo">
-          <div class="logo-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              <path d="M11 8v6"></path>
-              <path d="M8 11h6"></path>
-            </svg>
-          </div>
+          <div class="logo-icon">🏛️</div>
           <div class="brand-text">
-            <span class="brand-title">FindSphere</span>
-            <span class="brand-subtitle">Recovery Network</span>
+            <span class="brand-title">Lost Property Office</span>
+            <span class="brand-subtitle">Campus & Transit Custody</span>
           </div>
         </div>
         <p class="footer-tagline">
-          The verified community custody & multimodal item recovery system. Serving universities, metro networks, and public institutions.
+          The verified central repository for misplaced property across campus premises and public transport corridors.
         </p>
       </div>
 
       <div class="footer-col">
-        <h5 class="footer-heading">Custody Desks</h5>
+        <h5 class="footer-heading">Collection Points</h5>
         <ul class="footer-links">
-          <li>Main Campus Security Desk (Gate 1)</li>
+          <li>Main Campus Security Gate #1</li>
           <li>Central Library Circulation Desk</li>
           <li>Student Activity Center Desk</li>
           <li>Transit Hub Security Post #2</li>
@@ -526,25 +511,27 @@
       </div>
 
       <div class="footer-col">
-        <h5 class="footer-heading">Hours & Contact</h5>
+        <h5 class="footer-heading">Operating Hours</h5>
         <ul class="footer-links">
           <li>Monday – Friday: 08:00 – 19:00</li>
           <li>Saturday: 09:00 – 16:00</li>
-          <li>Helpline: +91 (0863) 2344-700</li>
+          <li>Dispatch: +91 (0863) 2344-700</li>
           <li>Email: lostfound@campus.edu</li>
         </ul>
       </div>
 
       <div class="footer-col">
-        <h5 class="footer-heading">Security Compliance</h5>
-        <p class="footer-subtext">All claims are audited with timestamped physical handoff logs under Institutional Custody Protocol Section 12-B.</p>
+        <h5 class="footer-heading">Custody Regulations</h5>
+        <p class="footer-subtext" style="color:#CBD5E1; font-size:0.8125rem;">
+          Unclaimed items are retained for a minimum of 90 calendar days under Institutional Property Code Section 12-B before community disposal or donation.
+        </p>
       </div>
     </div>
 
     <div class="footer-bottom">
       <div class="container footer-bottom-inner">
-        <p>&copy; 2026 FindSphere Recovery Network. All rights reserved.</p>
-        <p>Built with OpenAI CLIP Vision & Multi-Criteria Retrieval.</p>
+        <p>&copy; 2026 Central Lost Property Office. All rights reserved.</p>
+        <p>Campus Security & Operations Division.</p>
       </div>
     </div>
   </footer>
@@ -554,7 +541,7 @@
     <div class="modal-box">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">Initiate Ownership Claim</h3>
+          <h3 class="modal-title">Arrange Collection / Claim Property</h3>
           <p class="modal-subtitle" id="modal-item-title">Item: Apple iPhone 14 Pro</p>
         </div>
         <button type="button" class="btn-close-modal" id="btn-close-modal">&times;</button>
@@ -562,23 +549,16 @@
 
       <div class="modal-body">
         <div class="claim-notice">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <div>
-            <strong>Anti-Theft Ownership Verification:</strong>
-            <p id="modal-verification-prompt">Describe any unique scratch, marks, or packaging details.</p>
-          </div>
+          <strong>Proof of Ownership Required:</strong>
+          <p id="modal-verification-prompt" style="margin-top:4px;">Describe any unique scratch, marks, or packaging details.</p>
         </div>
 
         <form id="form-submit-claim">
           <input type="hidden" id="claim-item-id" />
 
           <div class="form-group">
-            <label class="form-label" for="claim-details">Your Secret Identifying Details *</label>
-            <textarea id="claim-details" class="form-control" rows="3" required placeholder="Answer the question above (e.g. exact sticker on back, lockscreen image, serial number digits, or unique contents)..."></textarea>
+            <label class="form-label" for="claim-details">Your Identifying Details (Secret Answer) *</label>
+            <textarea id="claim-details" class="form-control" rows="3" required placeholder="Describe private details only the owner knows (e.g. exact sticker on back, lockscreen wallpaper, scratches, inner contents)..."></textarea>
           </div>
 
           <div class="form-row">
@@ -587,7 +567,7 @@
               <input type="text" id="claim-name" class="form-control" required placeholder="e.g. Praneeth Kumar" />
             </div>
             <div class="form-group col-6">
-              <label class="form-label" for="claim-phone">Contact Phone / WhatsApp *</label>
+              <label class="form-label" for="claim-phone">Phone Number *</label>
               <input type="tel" id="claim-phone" class="form-control" required placeholder="+91 98765 43210" />
             </div>
           </div>
@@ -599,7 +579,7 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-outline" id="btn-cancel-claim">Cancel</button>
-            <button type="submit" class="btn btn-primary" id="btn-confirm-claim">Submit Claim for Review</button>
+            <button type="submit" class="btn btn-primary" id="btn-confirm-claim">Submit Verification Claim</button>
           </div>
         </form>
 
