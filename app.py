@@ -1,1392 +1,474 @@
 import os
-import pickle
-import json
+import io
 import uuid
 from datetime import datetime
-
+from PIL import Image
 import streamlit as st
-import torch
-from PIL import Image, ImageOps
-from transformers import AutoProcessor, AutoModel
 
-from src.embeddings import add_item_to_database
-
+from src.database import db
+from src.ai_engine import ai_engine
 
 # ============================================================
-# CONFIGURATION
+# PAGE CONFIGURATION & WEBLIUM DESIGN SYSTEM
 # ============================================================
-
-MODEL_NAME = "openai/clip-vit-base-patch32"
-
-EMBEDDINGS_PATH = "models/image_embeddings.pkl"
-
-REGISTERED_ITEMS_PATH = "data/registered_items"
-
-METADATA_PATH = "data/registered_items_metadata.json"
-# ============================================================
-# MATCHING SETTINGS
-# ============================================================
-
-MIN_IMAGE_SIMILARITY = 0.72
-MIN_FINAL_SCORE = 0.70
-
-
-def resolve_image_path(image_path, filename):
-    """
-    Resolve image paths safely for both local Windows
-    and Streamlit Cloud (Linux).
-    """
-
-    candidates = []
-
-    # Project root
-    project_root = os.path.dirname(
-        os.path.abspath(__file__)
-    )
-
-    # --------------------------------------------------------
-    # 1. Stored image path
-    # --------------------------------------------------------
-
-    if image_path:
-
-        # Convert Windows backslashes to Linux-style slashes
-        clean_path = str(image_path).replace("\\", "/")
-
-        candidates.append(clean_path)
-
-        # Make it relative to project root
-        candidates.append(
-            os.path.join(
-                project_root,
-                clean_path
-            )
-        )
-
-    # --------------------------------------------------------
-    # 2. Search using filename
-    # --------------------------------------------------------
-
-    if filename:
-
-        candidates.extend([
-            os.path.join(
-                project_root,
-                "data",
-                "registered_items",
-                filename
-            ),
-
-            os.path.join(
-                project_root,
-                "data",
-                "found_items",
-                filename
-            )
-        ])
-
-    # --------------------------------------------------------
-    # 3. Check candidates
-    # --------------------------------------------------------
-
-    for path in candidates:
-
-        if path and os.path.isfile(path):
-            return path
-
-    # --------------------------------------------------------
-    # 4. Search recursively inside data folder
-    # --------------------------------------------------------
-
-    if filename:
-
-        data_folder = os.path.join(
-            project_root,
-            "data"
-        )
-
-        if os.path.exists(data_folder):
-
-            for root, dirs, files in os.walk(
-                data_folder
-            ):
-
-                if filename in files:
-
-                    return os.path.join(
-                        root,
-                        filename
-                    )
-
-    return None
-
-
-# ============================================================
-# PAGE CONFIGURATION
-# ============================================================
-
 st.set_page_config(
-    page_title="AI Lost & Found",
+    page_title="FindSphere — Campus & Transit Lost & Found Recovery Network",
     page_icon="🔎",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-
-# ============================================================
-# CATEGORY SYSTEM
-# ============================================================
-
-DEFAULT_CATEGORIES = [
-    "backpack",
-    "bottle",
-    "phone",
-    "wallet",
-    "watch",
-    "laptop",
-    "other"
-]
-
-
-def get_categories():
-
-    categories = set(DEFAULT_CATEGORIES)
-
-    for item in database:
-
-        category = item.get("category")
-
-        if category:
-            categories.add(category.lower())
-
-    return sorted(categories)
-
-
-def category_selector(label, key_prefix):
-
-    categories = get_categories()
-
-    display_categories = [
-        category.title()
-        for category in categories
-        if category != "other"
-    ]
-
-    display_categories.append("Other / Custom")
-
-    selected = st.selectbox(
-        label,
-        display_categories,
-        key=f"{key_prefix}_category"
-    )
-
-    if selected == "Other / Custom":
-
-        custom_category = st.text_input(
-            "Enter your category",
-            placeholder="Example: Earbuds, ID Card, Calculator...",
-            key=f"{key_prefix}_custom"
-        )
-
-        if custom_category.strip():
-
-            return custom_category.strip().lower()
-
-        return "other"
-
-    return selected.lower()
-
-
-# ============================================================
-# IMAGE DISPLAY
-# ============================================================
-
-def prepare_display_image(
-    image_path,
-    size=(320, 260)
-):
-
-    image = Image.open(
-        image_path
-    ).convert("RGB")
-
-    image = ImageOps.contain(
-        image,
-        size,
-        method=Image.Resampling.LANCZOS
-    )
-
-    canvas = Image.new(
-        "RGB",
-        size,
-        "white"
-    )
-
-    x = (
-        size[0] - image.width
-    ) // 2
-
-    y = (
-        size[1] - image.height
-    ) // 2
-
-    canvas.paste(
-        image,
-        (x, y)
-    )
-
-    return canvas
-
-
-# ============================================================
-# LOAD CLIP MODEL
-# ============================================================
-
-@st.cache_resource
-def load_model():
-
-    model = AutoModel.from_pretrained(
-        MODEL_NAME
-    )
-
-    processor = AutoProcessor.from_pretrained(
-        MODEL_NAME
-    )
-
-    model.eval()
-
-    return model, processor
-
-
-# ============================================================
-# LOAD DATABASE
-# ============================================================
-
-@st.cache_data
-def load_database():
-
-    if not os.path.exists(
-        EMBEDDINGS_PATH
-    ):
-
-        return []
-
-    with open(
-        EMBEDDINGS_PATH,
-        "rb"
-    ) as file:
-
-        return pickle.load(file)
-
-
-# ============================================================
-# LOAD METADATA
-# ============================================================
-
-def load_metadata():
-
-    if not os.path.exists(
-        METADATA_PATH
-    ):
-
-        return {}
-
-    try:
-
-        with open(
-            METADATA_PATH,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-            return json.load(file)
-
-    except Exception:
-
-        return {}
-
-
-# ============================================================
-# SAVE METADATA
-# ============================================================
-
-def save_metadata(
-    filename,
-    description,
-    location,
-    date_found,
-    category
-):
-
-    os.makedirs(
-        REGISTERED_ITEMS_PATH,
-        exist_ok=True
-    )
-
-    metadata = load_metadata()
-
-    metadata[filename] = {
-
-        "description": description,
-
-        "location": location,
-
-        "date_found": str(date_found),
-
-        "category": category
+# Custom Weblium-Inspired CSS
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #0F172A;
     }
+    
+    /* Classic Top Header */
+    .app-header {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        color: #FFFFFF;
+        padding: 32px 36px;
+        border-radius: 14px;
+        margin-bottom: 28px;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.15);
+    }
+    .app-header h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 8px;
+        color: #FFFFFF !important;
+    }
+    .app-header p {
+        font-size: 1.05rem;
+        color: #94A3B8;
+        max-width: 800px;
+        line-height: 1.5;
+        margin: 0;
+    }
+    .badge-pill {
+        display: inline-block;
+        background-color: rgba(37, 99, 235, 0.2);
+        color: #60A5FA;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 12px;
+    }
+    
+    /* Metrics Row */
+    .metric-container {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .metric-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #0F172A;
+    }
+    .metric-label {
+        font-size: 0.8125rem;
+        color: #64748B;
+        font-weight: 600;
+    }
+    
+    /* Item Cards */
+    .item-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04);
+        transition: transform 0.2s ease;
+    }
+    .item-card:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 8px 16px -2px rgba(15, 23, 42, 0.08);
+    }
+    .score-badge {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        display: inline-block;
+    }
+    .score-high { background-color: #DCFCE7; color: #15803D; }
+    .score-medium { background-color: #DBEAFE; color: #1D4ED8; }
+    .score-low { background-color: #F1F5F9; color: #475569; }
+    
+    /* Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+        border-bottom: 2px solid #E2E8F0;
+        padding-bottom: 4px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #475569;
+        border-radius: 6px;
+        padding: 10px 18px;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #2563EB !important;
+        background-color: #EFF6FF !important;
+    }
+    
+    /* Buttons */
+    div.stButton > button {
+        background-color: #2563EB;
+        color: #FFFFFF;
+        font-weight: 600;
+        border-radius: 8px;
+        border: none;
+        padding: 10px 24px;
+        transition: all 0.2s ease;
+    }
+    div.stButton > button:hover {
+        background-color: #1D4ED8;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+</style>
+""", unsafe_allow_html=True)
 
-    with open(
-        METADATA_PATH,
-        "w",
-        encoding="utf-8"
-    ) as file:
+# Header Banner
+st.markdown("""
+<div class="app-header">
+    <span class="badge-pill">● Official Custody Protocol • Section 12-B</span>
+    <h1>FindSphere Recovery Network</h1>
+    <p>Intelligent community and campus lost & found management system. Utilizing OpenAI CLIP multimodal embeddings to visually cross-match and reunite belongings with verified owners.</p>
+</div>
+""", unsafe_allow_html=True)
 
-        json.dump(
-            metadata,
-            file,
-            indent=4
-        )
+# Metrics Ribbon
+stats = db.get_statistics()
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['total_found']}</div><div class="metric-label">Items in Vault Custody</div></div>""", unsafe_allow_html=True)
+with col2:
+    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['success_rate_percent']}%</div><div class="metric-label">Verified Reconnection Rate</div></div>""", unsafe_allow_html=True)
+with col3:
+    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['avg_recovery_hours']} hrs</div><div class="metric-label">Avg. Resolution Window</div></div>""", unsafe_allow_html=True)
+with col4:
+    st.markdown(f"""<div class="metric-container"><div class="metric-value">{stats['active_custody_zones']}</div><div class="metric-label">Campus Custody Desks</div></div>""", unsafe_allow_html=True)
+
+st.write("")
+
+# Navigation Tabs
+tab_match, tab_catalog, tab_found, tab_lost, tab_claims = st.tabs([
+    "🔎 Visual Match Studio",
+    "📦 Custody Vault Catalog",
+    "📥 Register Found Item",
+    "📝 File Lost Inquiry",
+    "🛡️ Verification & Claims Desk"
+])
 
 
 # ============================================================
-# LOAD MODEL + DATABASE
+# TAB 1: VISUAL MATCH STUDIO
 # ============================================================
-
-model, processor = load_model()
-
-database = load_database()
-
-metadata = load_metadata()
-
-
-# ============================================================
-# IMAGE EMBEDDING
-# ============================================================
-
-def get_image_embedding(image):
-
-    inputs = processor(
-        images=image,
-        return_tensors="pt"
-    )
-
-    with torch.no_grad():
-
-        vision_outputs = model.vision_model(
-            pixel_values=inputs[
-                "pixel_values"
-            ]
+with tab_match:
+    st.subheader("Locate Your Missing Valuable")
+    st.caption("Upload a photograph or provide details. Our CLIP multimodal model compares visual features against all items currently in campus custody.")
+    
+    col_input, col_results = st.columns([1, 1.2], gap="large")
+    
+    with col_input:
+        st.markdown("##### 1. Query Details")
+        
+        query_image = st.file_uploader("Upload Lost Item Photo", type=["jpg", "jpeg", "png", "webp"])
+        
+        # Sample quick pick
+        sample_choice = st.selectbox(
+            "Or select a test reference item from the campus dataset:",
+            ["None", "Water Bottle (b2.jpg)", "Leather Wallet (wallet_test.jpg)", "Wristwatch (watchhh.jpg)", "Backpack (backpag.jpg)"]
         )
+        
+        sample_path = None
+        if sample_choice == "Water Bottle (b2.jpg)":
+            sample_path = "data/test_images/b2.jpg"
+        elif sample_choice == "Leather Wallet (wallet_test.jpg)":
+            sample_path = "data/test_images/wallet_test.jpg"
+        elif sample_choice == "Wristwatch (watchhh.jpg)":
+            sample_path = "data/test_images/watchhh.jpg"
+        elif sample_choice == "Backpack (backpag.jpg)":
+            sample_path = "data/test_images/backpag.jpg"
+            
+        if sample_path and os.path.exists(sample_path) and not query_image:
+            st.image(sample_path, caption=f"Selected Sample: {sample_choice}", use_container_width=True)
+            
+        description = st.text_input("Item Description / Hallmarks", placeholder="e.g. Black Herschel backpack with red striped lining")
+        
+        c_cat, c_loc = st.columns(2)
+        with c_cat:
+            category = st.selectbox("Category Filter", ["all", "backpack", "bottle", "phone", "wallet", "watch", "other"])
+        with c_loc:
+            location = st.selectbox("Location Filter", ["all", "Library", "Cafeteria", "Engineering", "Science", "Sports", "Transit"])
+            
+        min_threshold = st.slider("Minimum Confidence Threshold", min_value=30, max_value=80, value=45, step=5)
+        
+        btn_match = st.button("🔎 Run Multimodal Search", use_container_width=True)
 
-        image_features = (
-            vision_outputs.pooler_output
-        )
-
-        image_features = (
-            model.visual_projection(
-                image_features
-            )
-        )
-
-    image_features = (
-        image_features
-        / image_features.norm(
-            p=2,
-            dim=-1,
-            keepdim=True
-        )
-    )
-
-    return image_features.squeeze()
-
-
-# ============================================================
-# TEXT EMBEDDING
-# ============================================================
-
-def get_text_embedding(text):
-
-    inputs = processor(
-        text=[text],
-        return_tensors="pt",
-        padding=True
-    )
-
-    with torch.no_grad():
-
-        text_features = model.get_text_features(
-            **inputs
-        )
-
-    if hasattr(
-        text_features,
-        "pooler_output"
-    ):
-
-        text_features = (
-            text_features.pooler_output
-        )
-
-    text_features = (
-        text_features
-        / text_features.norm(
-            p=2,
-            dim=-1,
-            keepdim=True
-        )
-    )
-
-    return text_features.squeeze()
-
-
-# ============================================================
-# FIND MATCHES
-# ============================================================
-
-def find_matches(
-    image,
-    description="",
-    selected_category="all",
-    top_k=5
-):
-
-    if not database:
-        return []
-
-    image_embedding = get_image_embedding(image)
-
-    text_embedding = None
-
-    if description.strip():
-        text_embedding = get_text_embedding(
-            description
-        )
-
-    results = []
-
-    for item in database:
-
-        item_category = (
-            item.get(
-                "category",
-                "other"
-            )
-            .lower()
-            .strip()
-        )
-
-        # ====================================================
-        # STRICT CATEGORY FILTER
-        # ====================================================
-
-        if (
-            selected_category != "all"
-            and selected_category.strip()
-            and selected_category.lower() != "all"
-        ):
-
-            selected = selected_category.lower().strip()
-
-            if item_category != selected:
-                continue
-
-        # ====================================================
-        # IMAGE SIMILARITY
-        # ====================================================
-
-        stored_embedding = torch.tensor(
-            item["embedding"],
-            dtype=torch.float32
-        )
-
-        stored_embedding = (
-            stored_embedding
-            / stored_embedding.norm(
-                p=2,
-                dim=-1,
-                keepdim=True
-            )
-        )
-
-        image_similarity = torch.dot(
-            image_embedding,
-            stored_embedding
-        ).item()
-
-        image_similarity = max(
-            min(
-                image_similarity,
-                1.0
-            ),
-            -1.0
-        )
-
-        # ====================================================
-        # EARLY IMAGE FILTER
-        # ====================================================
-
-        if image_similarity < MIN_IMAGE_SIMILARITY:
-            continue
-
-        # ====================================================
-        # TEXT SIMILARITY
-        # ====================================================
-
-        text_similarity = None
-
-        if text_embedding is not None:
-
-            text_similarity = torch.dot(
-                text_embedding,
-                stored_embedding
-            ).item()
-
-            text_similarity = max(
-                min(
-                    text_similarity,
-                    1.0
-                ),
-                -1.0
-            )
-
-        # ====================================================
-        # FINAL MULTIMODAL SCORE
-        # ====================================================
-
-        if text_similarity is not None:
-
-            final_score = (
-                0.70 * image_similarity
-                +
-                0.30 * text_similarity
-            )
-
+    with col_results:
+        st.markdown("##### 2. Ranked Custody Matches")
+        
+        if btn_match:
+            img_to_search = None
+            if query_image:
+                img_to_search = Image.open(query_image)
+            elif sample_path and os.path.exists(sample_path):
+                img_to_search = Image.open(sample_path)
+                
+            if not img_to_search and not description.strip():
+                st.warning("Please upload an image, select a sample, or provide a description to begin searching.")
+            else:
+                with st.spinner("Analyzing visual embeddings and searching custody vaults..."):
+                    candidates = db.get_all_found_items()
+                    matches = ai_engine.search_matches(
+                        candidate_items=candidates,
+                        query_image=img_to_search,
+                        query_text=description,
+                        selected_category=category,
+                        selected_location=location,
+                        min_confidence=float(min_threshold),
+                        top_k=5
+                    )
+                    
+                if not matches:
+                    st.info("No items in custody met the selected confidence threshold. Try lowering the threshold or file a Lost Inquiry in Tab 4.")
+                else:
+                    st.success(f"Discovered {len(matches)} matching candidate(s) in custody:")
+                    for m in matches:
+                        it = m["item"]
+                        score = m["confidence"]
+                        badge_style = "score-high" if score >= 80 else ("score-medium" if score >= 65 else "score-low")
+                        
+                        with st.container():
+                            st.markdown(f"""
+                            <div class="item-card">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <h4 style="margin:0; font-size:1.1rem; color:#0F172A;">{it.get('title')}</h4>
+                                    <span class="score-badge {badge_style}">{score}% Match</span>
+                                </div>
+                                <p style="font-size:0.85rem; color:#475569; margin:4px 0;">📍 <strong>Location:</strong> {it.get('location')} • 🔒 <strong>Custody:</strong> {it.get('custody_location')}</p>
+                                <p style="font-size:0.8rem; color:#2563EB; margin:4px 0;"><strong>Matched via:</strong> {', '.join(m.get('reasons', []))}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            c_img, c_claim = st.columns([1, 1.5])
+                            with c_img:
+                                if it.get("image_path") and os.path.exists(it["image_path"]):
+                                    st.image(it["image_path"], use_container_width=True)
+                            with c_claim:
+                                st.caption(f"Verification Prompt: {it.get('verification_prompt', 'Describe unique marks.')}")
+                                with st.expander(f"Claim Item #{it.get('id')}"):
+                                    c_name = st.text_input("Your Full Name", key=f"cn_{it.get('id')}")
+                                    c_phone = st.text_input("Phone Number", key=f"cp_{it.get('id')}")
+                                    c_proof = st.text_area("Identifying Proof (Secret Answer)", key=f"cpr_{it.get('id')}", placeholder="Describe scratch, wallpaper, contents...")
+                                    if st.button("Submit Ownership Claim", key=f"btn_c_{it.get('id')}"):
+                                        if c_name and c_phone and c_proof:
+                                            res = db.submit_claim({
+                                                "item_id": it.get("id"),
+                                                "claimant_name": c_name,
+                                                "claimant_phone": c_phone,
+                                                "claimant_email": "",
+                                                "identifying_details": c_proof
+                                            })
+                                            st.success(f"Claim filed successfully! Reference: {res.get('claim_id')}. Please report to {it.get('custody_location')}.")
+                                        else:
+                                            st.error("Please fill all claim fields.")
         else:
-
-            final_score = image_similarity
-
-        # ====================================================
-        # CATEGORY MATCH
-        # ====================================================
-
-        category_match = (
-            selected_category == "all"
-            or item_category ==
-            selected_category.lower().strip()
-        )
-
-        # Small bonus for category match
-        if category_match:
-            final_score += 0.03
-
-        final_score = max(
-            min(
-                final_score,
-                1.0
-            ),
-            -1.0
-        )
-
-        # ====================================================
-        # FINAL QUALITY FILTER
-        # ====================================================
-
-        if final_score < MIN_FINAL_SCORE:
-            continue
-
-        results.append(
-            {
-                "filename": item["filename"],
-                "category": item_category,
-                "image_path": item["image_path"],
-                "image_similarity": image_similarity,
-                "text_similarity": text_similarity,
-                "final_score": final_score,
-                "category_match": category_match
-            }
-        )
-
-    # ========================================================
-    # SORT
-    # ========================================================
-
-    results.sort(
-        key=lambda x: x["final_score"],
-        reverse=True
-    )
-
-    # ========================================================
-    # REMOVE DUPLICATES
-    # ========================================================
-
-    unique_results = []
-
-    seen_files = set()
-
-    for result in results:
-
-        filename = result["filename"]
-
-        if filename in seen_files:
-            continue
-
-        seen_files.add(filename)
-
-        unique_results.append(result)
-
-        if len(unique_results) >= top_k:
-            break
-
-    return unique_results
+            st.info("Upload an image or pick a test item on the left and click 'Run Multimodal Search' to view matched items.")
 
 
 # ============================================================
-# HEADER
+# TAB 2: CUSTODY VAULT CATALOG
 # ============================================================
-
-st.title(
-    "🔎 AI Lost & Found"
-)
-
-st.subheader(
-    "Find your lost belongings using AI-powered visual matching"
-)
-
-st.write(
-    "Upload a photo of your lost item and our AI "
-    "will search through registered found items."
-)
-
-st.divider()
-
-
-# ============================================================
-# PROJECT STATISTICS
-# ============================================================
-
-stat1, stat2, stat3 = st.columns(3)
-
-with stat1:
-
-    st.metric(
-        "📦 Registered Items",
-        len(database)
-    )
-
-with stat2:
-
-    st.metric(
-        "🏷️ Categories",
-        len(
-            set(
-                item.get(
-                    "category",
-                    "other"
-                )
-                for item in database
-            )
-        )
-    )
-
-with stat3:
-
-    st.metric(
-        "🧠 AI Model",
-        "CLIP"
-    )
+with tab_catalog:
+    st.subheader("Items Currently in Safe Custody")
+    st.caption("All items logged by security personnel and campus staff awaiting verified owner reclamation.")
+    
+    col_f1, col_f2 = st.columns([1, 2])
+    with col_f1:
+        cat_filter = st.selectbox("Category Filter", ["all", "backpack", "bottle", "phone", "wallet", "watch", "other"], key="cat_catalog")
+    with col_f2:
+        search_filter = st.text_input("Search catalog by keyword or brand...", placeholder="e.g. Apple, Hydro Flask, Herschel, Casio...")
+        
+    items = db.get_all_found_items(category=cat_filter)
+    if search_filter:
+        q = search_filter.lower().strip()
+        items = [it for it in items if q in it.get("title", "").lower() or q in it.get("location", "").lower() or q in it.get("brand", "").lower()]
+        
+    st.write(f"Displaying **{len(items)}** items:")
+    
+    # Render in 3-column grid
+    cols = st.columns(3)
+    for idx, it in enumerate(items):
+        with cols[idx % 3]:
+            st.markdown(f"""
+            <div class="item-card">
+                <span class="score-badge {'score-high' if it.get('status') == 'Available' else 'score-medium'}" style="margin-bottom:8px;">{it.get('status')}</span>
+                <h4 style="margin:4px 0; font-size:1rem;">{it.get('title')}</h4>
+                <p style="font-size:0.8rem; color:#64748B;">📍 {it.get('location')}</p>
+                <p style="font-size:0.75rem; color:#94A3B8;">📅 Found: {it.get('date_found')} • 🔒 {it.get('custody_location')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if it.get("image_path") and os.path.exists(it["image_path"]):
+                st.image(it["image_path"], use_container_width=True)
+            st.divider()
 
 
 # ============================================================
-# SIDEBAR - REGISTER FOUND ITEM
+# TAB 3: REGISTER FOUND ITEM (INTAKE)
 # ============================================================
-
-st.sidebar.title(
-    "📦 Register Found Item"
-)
-
-st.sidebar.caption(
-    "Add a found item so other users can search for it."
-)
-
-
-found_image = st.sidebar.file_uploader(
-    "Upload found item image",
-    type=[
-        "jpg",
-        "jpeg",
-        "png",
-        "webp"
-    ],
-    key="found_image"
-)
-
-
-found_category = category_selector(
-    "🏷️ Select item category",
-    "found"
-)
-
-
-found_description = st.sidebar.text_area(
-    "Found item description",
-    placeholder=(
-        "Example: Black backpack with red logo"
-    ),
-    key="found_description"
-)
-
-
-found_location = st.sidebar.text_input(
-    "📍 Where was it found?",
-    placeholder="Example: University Library",
-    key="found_location"
-)
-
-
-found_date = st.sidebar.date_input(
-    "📅 Date found",
-    key="found_date"
-)
+with tab_found:
+    st.subheader("Custody Intake Registration")
+    st.caption("Register an item turned into security or lost & found dispatch. Generates multimodal vectors and alerts matching lost inquiries.")
+    
+    with st.form("form_intake"):
+        f_title = st.text_input("Item Title *", placeholder="e.g. Apple Watch Series 8 (Midnight)")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            f_cat = st.selectbox("Category *", ["backpack", "bottle", "phone", "wallet", "watch", "other"])
+        with c2:
+            f_brand = st.text_input("Brand", placeholder="e.g. Apple")
+        with c3:
+            f_color = st.text_input("Color", placeholder="e.g. Midnight Black")
+            
+        c4, c5 = st.columns(2)
+        with c4:
+            f_loc = st.text_input("Location Found *", placeholder="e.g. Central Library - 2nd Floor")
+        with c5:
+            f_locker = st.text_input("Custody Locker / Desk *", value="Locker A-04, Main Security Office")
+            
+        f_prompt = st.text_input("Anti-Theft Verification Prompt *", value="Describe any unique scratch, marks, or packaging details.")
+        f_img = st.file_uploader("Item Photograph *", type=["jpg", "jpeg", "png"])
+        
+        submitted = st.form_submit_button("Register Item into Custody")
+        
+        if submitted:
+            if f_title and f_loc and f_img:
+                img_bytes = f_img.read()
+                ext = os.path.splitext(f_img.name)[1] or ".jpg"
+                fn = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}{ext}"
+                save_dir = os.path.join("data", "registered_items")
+                os.makedirs(save_dir, exist_ok=True)
+                full_path = os.path.join(save_dir, fn)
+                with open(full_path, "wb") as f:
+                    f.write(img_bytes)
+                    
+                emb = ai_engine.extract_image_embedding(img_bytes)
+                
+                new_item = {
+                    "title": f_title,
+                    "description": f"{f_title}. Brand: {f_brand}. Color: {f_color}. Found at {f_loc}.",
+                    "category": f_cat,
+                    "brand": f_brand,
+                    "color": f_color,
+                    "location": f_loc,
+                    "date_found": datetime.now().strftime("%Y-%m-%d"),
+                    "filename": fn,
+                    "image_path": full_path.replace("\\", "/"),
+                    "status": "Available",
+                    "custody_location": f_locker,
+                    "verification_prompt": f_prompt,
+                    "embedding": emb.tolist()
+                }
+                added = db.add_found_item(new_item)
+                st.success(f"Item logged into custody! Custody ID: {added.get('id')}.")
+            else:
+                st.error("Please provide title, location, and a photograph.")
 
 
 # ============================================================
-# REGISTER FOUND ITEM
+# TAB 4: FILE LOST INQUIRY
 # ============================================================
+with tab_lost:
+    st.subheader("Submit Lost Valuable Inquiry")
+    st.caption("Can't find your item in the catalog? File a report and our continuous matcher will alert you as soon as matching items are registered.")
+    
+    with st.form("form_lost_inquiry"):
+        l_name = st.text_input("What did you lose? *", placeholder="e.g. Grey Herschel Travel Laptop Backpack")
+        l_cat = st.selectbox("Category *", ["backpack", "bottle", "phone", "wallet", "watch", "other"])
+        l_desc = st.text_area("Detailed Description *", placeholder="Describe brand, markings, stickers, unique features...")
+        l_loc = st.text_input("Last Seen Location *", placeholder="e.g. Cafeteria Table 14")
+        
+        c_n, c_e, c_p = st.columns(3)
+        with c_n:
+            owner_name = st.text_input("Your Full Name *")
+        with c_e:
+            owner_email = st.text_input("Email Address *")
+        with c_p:
+            owner_phone = st.text_input("Phone Number *")
+            
+        lost_sub = st.form_submit_button("Submit Lost Report")
+        if lost_sub:
+            if l_name and l_desc and owner_name and (owner_email or owner_phone):
+                rep = db.add_lost_report({
+                    "item_name": l_name,
+                    "category": l_cat,
+                    "description": l_desc,
+                    "location_lost": l_loc,
+                    "date_lost": datetime.now().strftime("%Y-%m-%d"),
+                    "contact_name": owner_name,
+                    "contact_email": owner_email,
+                    "contact_phone": owner_phone
+                })
+                st.success(f"Lost report registered! Tracking ID: {rep.get('id')}. You will be alerted upon a positive match.")
+            else:
+                st.error("Please fill all required fields.")
 
-if st.sidebar.button(
-    "➕ Register Found Item",
-    use_container_width=True
-):
 
-    if found_image is None:
-
-        st.sidebar.error(
-            "❌ Please upload an image."
-        )
-
-    elif found_category == "other":
-
-        st.sidebar.error(
-            "❌ Please enter a custom category."
-        )
-
-    elif not found_description.strip():
-
-        st.sidebar.error(
-            "❌ Please enter a description."
-        )
-
-    elif not found_location.strip():
-
-        st.sidebar.error(
-            "❌ Please enter where the item was found."
-        )
-
+# ============================================================
+# TAB 5: CLAIMS VERIFICATION DESK
+# ============================================================
+with tab_claims:
+    st.subheader("Custody Handover & Verification Desk")
+    st.caption("Authorized campus security staff review claimant proofs and approve physical handovers.")
+    
+    claims = db.get_all_claims()
+    if not claims:
+        st.info("No active ownership claims currently pending review.")
     else:
-
-        try:
-
-            # ------------------------------------------------
-            # CREATE DIRECTORY
-            # ------------------------------------------------
-
-            os.makedirs(
-                REGISTERED_ITEMS_PATH,
-                exist_ok=True
-            )
-
-            # ------------------------------------------------
-            # UNIQUE FILENAME
-            # ------------------------------------------------
-
-            extension = os.path.splitext(
-                found_image.name
-            )[1].lower()
-
-            unique_filename = (
-                datetime.now().strftime(
-                    "%Y%m%d_%H%M%S"
-                )
-                +
-                "_"
-                +
-                uuid.uuid4().hex[:6]
-                +
-                extension
-            )
-
-            save_path = os.path.join(
-                REGISTERED_ITEMS_PATH,
-                unique_filename
-            )
-
-            # ------------------------------------------------
-            # SAVE IMAGE
-            # ------------------------------------------------
-
-            with open(
-                save_path,
-                "wb"
-            ) as file:
-
-                file.write(
-                    found_image.getbuffer()
-                )
-
-            # ------------------------------------------------
-            # GENERATE EMBEDDING
-            # ------------------------------------------------
-
-            with st.spinner(
-                "🤖 AI is analyzing the found item..."
-            ):
-
-                add_item_to_database(
-                    save_path,
-                    found_category,
-                    unique_filename
-                )
-
-            # ------------------------------------------------
-            # SAVE METADATA
-            # ------------------------------------------------
-
-            save_metadata(
-                unique_filename,
-                found_description,
-                found_location,
-                found_date,
-                found_category
-            )
-
-            # ------------------------------------------------
-            # CLEAR CACHE
-            # ------------------------------------------------
-
-            st.cache_data.clear()
-
-            st.sidebar.success(
-                "✅ Found item registered successfully!"
-            )
-
-            st.sidebar.info(
-                f"🏷️ Category: "
-                f"{found_category.title()}"
-            )
-
-            # Reload
-            database = load_database()
-
-        except Exception as e:
-
-            st.sidebar.error(
-                f"❌ Registration failed: {e}"
-            )
-
-
-# ============================================================
-# SIDEBAR STATUS
-# ============================================================
-
-st.sidebar.divider()
-
-st.sidebar.metric(
-    "🗃️ Registered AI Images",
-    len(database)
-)
-
-st.sidebar.caption(
-    "Powered by CLIP Computer Vision"
-)
-
-
-# ============================================================
-# LOST ITEM SEARCH
-# ============================================================
-
-st.header(
-    "🔍 Search for Your Lost Item"
-)
-
-
-uploaded_file = st.file_uploader(
-    "📷 Upload an image of your lost item",
-    type=[
-        "jpg",
-        "jpeg",
-        "png",
-        "webp"
-    ],
-    key="lost_image"
-)
-
-
-lost_category = category_selector(
-    "🏷️ Select lost item category",
-    "lost"
-)
-
-
-description = st.text_area(
-    "📝 Describe your lost item",
-    placeholder=(
-        "Example: Black backpack with red logo"
-    ),
-    key="lost_description"
-)
-
-
-location = st.text_input(
-    "📍 Where did you lose it?",
-    placeholder="Example: University Library",
-    key="lost_location"
-)
-
-
-date = st.date_input(
-    "📅 Date you lost it",
-    key="lost_date"
-)
-
-
-# ============================================================
-# SEARCH
-# ============================================================
-
-if uploaded_file is not None:
-
-    image = Image.open(
-        uploaded_file
-    ).convert("RGB")
-
-    st.subheader(
-        "📦 Uploaded Item"
-    )
-
-    col1, col2 = st.columns(
-        [1, 2]
-    )
-
-    # --------------------------------------------------------
-    # UPLOADED IMAGE
-    # --------------------------------------------------------
-
-    with col1:
-
-        st.image(
-            image,
-            caption="Your lost item",
-            width=350
-        )
-
-    # --------------------------------------------------------
-    # INFORMATION
-    # --------------------------------------------------------
-
-    with col2:
-
-        st.markdown(
-            "### 📋 Item Information"
-        )
-
-        st.write(
-            f"**Description:** "
-            f"{description if description.strip() else 'Not provided'}"
-        )
-
-        st.write(
-            f"**Location:** "
-            f"{location if location.strip() else 'Not provided'}"
-        )
-
-        st.write(
-            f"**Date lost:** {date}"
-        )
-
-        st.info(
-            f"🏷️ Selected category: "
-            f"**{lost_category.title()}**"
-        )
-
-    st.divider()
-
-
-    # ========================================================
-    # SEARCH BUTTON
-    # ========================================================
-
-    if st.button(
-        "🔍 Find My Item",
-        type="primary",
-        use_container_width=True
-    ):
-
-        if not database:
-
-            st.error(
-                "❌ No found items are registered yet."
-            )
-
-        else:
-
-            with st.spinner(
-                "🤖 AI is searching for matching items..."
-            ):
-
-                matches = find_matches( 
-                    image,
-                    description=description,
-                    selected_category=lost_category,
-                    top_k=5
-                )
-
-            st.success(
-                "✅ AI search completed!"
-            )
-
-            st.subheader(
-                "🏆 Top Matching Found Items"
-            )
-
-            # =================================================
-            # DISPLAY RESULTS
-            # =================================================
-
-            if not matches:
-
-                st.markdown(
-                    """
-                    <div style="
-                        padding: 25px;
-                        border-radius: 15px;
-                        background: linear-gradient(135deg, #fff3cd, #ffe8a1);
-                        border: 1px solid #f0c36d;
-                        text-align: center;
-                        margin: 20px 0;
-                    ">
-
-                    <h2>🔍 No Matching Item Found</h2>
-
-                    <p style="font-size: 17px;">
-                        We couldn't find a sufficiently similar registered item.
-                    </p>
-
-                    <p>
-                    💡Try uploading another photo, checking the category,
-                        or registering the found item in our database.
-                     </p>
-
+        for c in claims:
+            target_item = db.get_item_by_id(c.get("item_id", ""))
+            with st.container():
+                st.markdown(f"""
+                <div class="item-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>Claim #{c.get('claim_id')}</strong>
+                        <span class="score-badge {'score-high' if c.get('status') == 'Approved' else 'score-medium'}">{c.get('status')}</span>
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                st.stop()
-
-            for rank, match in enumerate(
-                matches,
-                start=1
-            ):
-
-                score = (
-                    match["final_score"] * 100
-                )
-
-                image_score = (
-                    match["image_similarity"] * 100
-                )
-
-                text_score = None
-
-                if (
-                    match["text_similarity"]
-                    is not None
-                ):
-
-                    text_score = (
-                        match["text_similarity"]
-                        * 100
-                    )
-
-                col1, col2 = st.columns(
-                    [1, 2]
-                )
-
-                # ------------------------------------------------
-                # RESULT IMAGE
-                # ------------------------------------------------
-
-                with col1:
-
-                    image_path = resolve_image_path(
-                        match.get("image_path"),
-                        match.get("filename")
-                    )
-
-                    if image_path and os.path.exists(image_path):
-
-                        try:
-
-                            display_image = prepare_display_image(
-                                image_path,
-                                size=(320, 260)
-                            )
-
-                            st.image(
-                            display_image,
-                            width=320
-                            )
-
-                        except Exception as e:
-
-                            st.warning(
-                                "⚠️ Unable to display image."
-                            )
-
-                    else:
-
-                        st.warning(
-                            "⚠️ Image unavailable"
-                        )
-
-                # ------------------------------------------------
-                # RESULT INFORMATION
-                # ------------------------------------------------
-
-                with col2:
-
-                    st.markdown(
-                        f"### #{rank} — "
-                        f"{match['category'].title()}"
-                    )
-
-                    st.write(
-                        f"**File:** "
-                        f"{match['filename']}"
-                    )
-
-                    # Category match indicator
-
-                    if match[
-                        "category_match"
-                    ]:
-
-                        st.success(
-                            "🏷️ Category matched"
-                        )
-
-                    else:
-
-                        st.info(
-                            "🏷️ Visual/text candidate"
-                        )
-
-                    # Overall score
-
-                    st.metric(
-                        "🏆 Overall Match Score",
-                        f"{score:.2f}%"
-                    )
-
-                    st.progress(
-                        max(
-                            min(
-                                score / 100,
-                                1.0
-                            ),
-                            0.0
-                        )
-                    )
-
-                    # Image score
-
-                    st.write(
-                        f"📷 **Image similarity:** "
-                        f"{image_score:.2f}%"
-                    )
-
-                    # Text score
-
-                    if text_score is not None:
-
-                        st.write(
-                            f"📝 **Description similarity:** "
-                            f"{text_score:.2f}%"
-                        )
-
-                    # Confidence
-
-                    if score >= 80:
-
-                        st.success(
-                            "🟢 Strong Match — "
-                            "Highly similar item."
-                        )
-
-                    elif score >= 70:
-
-                        st.warning(
-                            "🟡 Good Candidate — "
-                            "Please verify the item."
-                        )
-
-                    elif score >= 60:
-
-                        st.warning(
-                            "🟠 Possible Match — "
-                            "Additional verification recommended."
-                        )
-
-                    else:
-
-                        st.info(
-                            "🔴 Low Match — "
-                            "This may not be the same item."
-                        )
-
-                    # ------------------------------------------------
-                    # FOUND ITEM DETAILS
-                    # ------------------------------------------------
-
-                    item_metadata = metadata.get(
-                        match["filename"]
-                    )
-
-                    if item_metadata:
-
-                        st.write("---")
-
-                        st.write(
-                            "📍 **Found at:** "
-                            +
-                            item_metadata.get(
-                                "location",
-                                "Unknown"
-                            )
-                        )
-
-                        st.write(
-                            "📅 **Date found:** "
-                            +
-                            item_metadata.get(
-                                "date_found",
-                                "Unknown"
-                            )
-                        )
-
-                        st.write(
-                            "📝 **Found description:** "
-                            +
-                            item_metadata.get(
-                                "description",
-                                "Not available"
-                            )
-                        )
-
-                        st.write(
-                            "🏷️ **Category:** "
-                            +
-                            item_metadata.get(
-                                "category",
-                                match["category"]
-                            ).title()
-                        )
-
+                    <p style="margin:4px 0;"><strong>Target Item:</strong> {target_item.get('title', 'Unknown') if target_item else 'Unknown'} (ID: {c.get('item_id')})</p>
+                    <p style="margin:4px 0;"><strong>Claimant:</strong> {c.get('claimant_name')} • 📞 {c.get('claimant_phone')} • ✉️ {c.get('claimant_email')}</p>
+                    <p style="margin:4px 0; background:#F8FAFC; padding:8px; border-radius:6px;"><strong>Submitted Proof / Secret Answer:</strong> <em>"{c.get('identifying_details')}"</em></p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if c.get("status") == "Pending Review":
+                    c_app, c_rej = st.columns([1, 1])
+                    with c_app:
+                        if st.button(f"Approve Handover", key=f"app_{c.get('claim_id')}"):
+                            db.resolve_claim(c.get("claim_id"), "Approved", notes="Verified by officer")
+                            st.success(f"Claim #{c.get('claim_id')} approved. Item marked as Reunited.")
+                            st.rerun()
+                    with c_rej:
+                        if st.button(f"Reject Claim", key=f"rej_{c.get('claim_id')}"):
+                            db.resolve_claim(c.get("claim_id"), "Rejected", notes="Proof did not match physical item")
+                            st.warning(f"Claim #{c.get('claim_id')} rejected.")
+                            st.rerun()
                 st.divider()
-
-
-# ============================================================
-# HOW IT WORKS
-# ============================================================
-
-with st.expander(
-    "🤖 How does the AI work?"
-):
-
-    st.markdown(
-        """
-        ### 1️⃣ Upload
-
-        Upload a photo of your lost item.
-
-        ### 2️⃣ Select Category
-
-        Choose the item category or enter
-        your own custom category.
-
-        ### 3️⃣ CLIP Vision
-
-        CLIP converts the image into a
-        numerical embedding representing
-        its visual characteristics.
-
-        ### 4️⃣ Text Understanding
-
-        Your description is converted into
-        a CLIP text embedding.
-
-        ### 5️⃣ Multimodal Matching
-
-        The system combines image similarity,
-        description similarity and category
-        information.
-
-        ### 6️⃣ Ranking
-
-        The most relevant found items are
-        ranked and displayed with scores.
-        """
-    )
-
-
-# ============================================================
-# PROFESSIONAL PROJECT INFORMATION
-# ============================================================
-
-st.divider()
-
-st.subheader(
-    "🚀 AI Matching Technology"
-)
-
-info1, info2, info3 = st.columns(3)
-
-with info1:
-
-    st.info(
-        "🖼️ **Computer Vision**\n\n"
-        "CLIP understands visual features "
-        "from uploaded item images."
-    )
-
-with info2:
-
-    st.info(
-        "📝 **Multimodal AI**\n\n"
-        "Image and text descriptions are "
-        "combined for better matching."
-    )
-
-with info3:
-
-    st.info(
-        "🏷️ **Dynamic Categories**\n\n"
-        "Users can choose existing categories "
-        "or create completely new ones."
-    )
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.divider()
-
-st.caption(
-    "🔎 AI Lost & Found • Powered by CLIP Computer Vision"
-)
-
-st.caption(
-    "AI-assisted matching • Image + Text Similarity • Dynamic Categories"
-)
